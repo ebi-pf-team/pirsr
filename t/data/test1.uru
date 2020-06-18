@@ -1,0 +1,358 @@
+AC   PIRSR000005-1;
+DC   Domain;
+TR   PIRSF; PIRSF000005; -; 1; level=0
+XX
+case <Feature:SRHMM000005-1> and <FTGroup:1>
+KW   Heme
+CC   -!- PTM: Binds 2 heme groups per subunit.
+end case
+XX
+case <Feature:SRHMM000005-1>
+FT   From: Q52369
+FT   BINDING      34     34        Heme 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING      37     37        Heme 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     139    139        Heme 2 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     142    142        Heme 2 (covalent).
+FT   Group: 1; Condition: C
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 13-FEB-12 14:49:4
+**ZB CRV 13-FEB-12 15:12:28
+//
+AC   PIRSR000005-2;
+DC   Domain;
+TR   PIRSF; PIRSF000005; -; 1; level=0
+XX
+case <Feature:SRHMM000005-2> and <FTGroup:1>
+KW   Iron
+KW   Metal-binding
+CC   -!- PTM: Binds 2 heme groups per subunit.
+end case
+XX
+case <Feature:SRHMM000005-2>
+FT   From: Q52369
+FT   METAL        38     38        Iron (heme 1 axial ligand).
+FT   Group: 1; Condition: H
+FT   METAL        86     86        Iron (heme 1 axial ligand).
+FT   Group: 1; Condition: M
+FT   METAL       143    143        Iron (heme 2 axial ligand).
+FT   Group: 1; Condition: H
+FT   METAL       187    187        Iron (heme 2 axial ligand).
+FT   Group: 1; Condition: M
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 13-FEB-12 14:55:0
+**ZB CRV 24-FEB-12 12:32:14
+//
+AC   PIRSR000006-1;
+DC   Domain;
+TR   PIRSF; PIRSF000006; -; 1; level=0
+XX
+case <Feature:SRHMM000006-1> and <FTGroup:1>
+KW   Iron
+KW   Metal-binding
+end case
+XX
+case <Feature:SRHMM000006-1>
+FT   From: D9IA45
+FT   METAL       147    147        Iron (heme C 1 axial ligand).
+FT   Group: 1; Condition: H
+FT   METAL       186    186        Iron (heme C 2 axial ligand).
+FT   Group: 1; Condition: M
+FT   METAL       237    237        Iron (heme C 2 axial ligand).
+FT   Group: 1; Condition: H
+FT   METAL       279    279        Iron (heme C 1 axial ligand).
+FT   Group: 1; Condition: M
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 10-MAY-11 11:34:32
+**ZB CRV 02-JUN-11 11:2:12
+//
+AC   PIRSR000006-2;
+DC   Domain;
+TR   PIRSF; PIRSF000006; -; 1; level=0
+XX
+case <Feature:SRHMM000006-2> and <FTGroup:1>
+KW   Heme
+CC   -!- COFACTOR:
+CC       Name=heme c; Xref=ChEBI:CHEBI:61717;
+CC       Note=Binds 2 heme C groups per subunit.
+end case
+XX
+case <Feature:SRHMM000006-2>
+FT   From: D9IA45
+FT   BINDING     143    143        Heme C 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     146    146        Heme C 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     233    233        Heme C 2 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     236    236        Heme C 2 (covalent).
+FT   Group: 1; Condition: C
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 10-MAY-11 14:36:36
+**ZB CRV 02-JUN-11 11:2:36
+//
+AC   PIRSR000007-50;
+DC   Domain;
+TR   PIRSF; PIRSF000007; -; 1; level=0
+XX
+case <Feature:SRHMM000007-50> and <FTGroup:1>
+KW   Heme
+CC   -!- PTM: Binds 2 heme groups covalently per subunit.
+end case
+XX
+case <Feature:SRHMM000007-50>
+FT   From: Q8NNK5
+FT   BINDING      67     67        Heme 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING      70     70        Heme 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     177    177        Heme 2 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     180    180        Heme 2 (covalent).
+FT   Group: 1; Condition: C
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+Comments: This rule was created based on analysis for RESID:AA0134.
+** Comments: Trigger PS51007.
+**ZA wang 03-OCT-14 16:41:55
+**ZB wang 14-JUL-16 14:20:38
+//
+AC   PIRSR000007-51;
+DC   Domain;
+TR   PIRSF; PIRSF000007; -; 1; level=0
+XX
+case <Feature:SRHMM000007-51> and <FTGroup:1>
+KW   Heme
+KW   Iron
+KW   Metal-binding
+CC   -!- PTM: Binds 2 heme groups covalently per subunit.
+end case
+XX
+case <Feature:SRHMM000007-51>
+FT   From: Q8NNK5
+FT   METAL        71     71        Iron (heme 1 axial ligand).
+FT   Group: 1; Condition: H
+FT   METAL       181    181        Iron (heme 2 axial ligand).
+FT   Group: 1; Condition: H
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+Comments: This rule was created based on analysis for RESID:AA0134.
+** Comments: Trigger PS51007.
+**ZA wang 03-OCT-14 17:38:4
+**ZB wang 14-JUL-16 14:24:18
+//
+AC   PIRSR000008-1;
+DC   Domain;
+TR   PIRSF; PIRSF000008; -; 1; level=0
+XX
+case <Feature:SRHMM000008-1> and (<FTGroup:1> or <FTGroup:2>)
+KW   Heme
+CC   -!- PTM: Binds 1 heme group per subunit.
+end case
+XX
+case <Feature:SRHMM000008-1>
+FT   From: P29899
+FT   BINDING      79     79        Heme (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING      82     82        Heme (covalent).
+FT   Group: 2; Condition: C
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA wang 23-MAR-10 18:31:2
+**ZB CRV 24-MAR-10 16:24:48
+//
+AC   PIRSR000008-2;
+DC   Domain;
+TR   PIRSF; PIRSF000008; -; 1; level=0
+XX
+case <Feature:SRHMM000008-2> and <FTGroup:1>
+KW   Iron
+KW   Metal-binding
+end case
+XX
+case <Feature:SRHMM000008-2>
+FT   From: P29899
+FT   METAL        83     83        Iron (heme axial ligand).
+FT   Group: 1; Condition: H
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 24-MAR-10 10:40:35
+//
+AC   PIRSR000009-1;
+DC   Domain;
+TR   PIRSF; PIRSF000009; -; 1; level=0
+XX
+case <Feature:SRHMM000009-1> and (<FTGroup:1> or <FTGroup:2>)
+KW   Heme
+CC   -!- PTM: Binds 1 heme group per subunit.
+end case
+XX
+case <Feature:SRHMM000009-1>
+FT   From: O07091
+FT   BINDING     152    152       Heme (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     155    155       Heme (covalent).
+FT   Group: 2; Condition: C
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 22-JUN-16 12:24:35
+**ZB CRV 10-MAR-17 12:33:59
+//
+AC   PIRSR000009-2;
+DC   Domain;
+TR   PIRSF; PIRSF000009; -; 1; level=0
+XX
+case <Feature:SRHMM000009-2> and (<FTGroup:1> or <FTGroup:2>)
+KW   Iron
+KW   Metal-binding
+end case
+XX
+case <Feature:SRHMM000009-2>
+FT   From: O07091
+FT   METAL       156    156       Iron (heme axial ligand).
+FT   Group: 1; Condition: H
+FT   METAL       182    182       Iron (heme axial ligand).
+FT   Group: 2; Condition: M
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 22-JUN-16 12:55:19
+**ZB CRV 22-JUN-16 12:57:31
+//
+AC   PIRSR000013-1;
+DC   Domain;
+TR   PIRSF; PIRSF000013; -; 1; level=0
+XX
+case <Feature:SRHMM000013-1> and <FTGroup:1>
+KW   Heme
+end case
+XX
+case <Feature:SRHMM000013-1>
+FT   From: P0ABL6
+FT   BINDING      57     57       Heme 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING      60     60       Heme 1 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING      87     87       Heme 2 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING      90     90       Heme 2 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     103    103       Substrate.
+FT   Group: 1; Condition: K
+FT   BINDING     147    147       Heme 3 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     150    150       Heme 3 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     179    179       Heme 4 (covalent).
+FT   Group: 1; Condition: C
+FT   BINDING     182    182       Heme 4 (covalent).
+FT   Group: 1; Condition: C
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 08-FEB-18 16:8:1
+**ZB CRV 24-APR-18 10:17:50
+//
+AC   PIRSR001359-3;
+DC   Domain;
+TR   PIRSF; PIRSF001359; -; 1; level=0
+XX
+case <Feature:SRHMM001359-3> and (<FTGroup:1> or <FTGroup:2> or <FTGroup:3> or <FTGroup:4> or <FTGroup:5>)
+KW   Metal-binding
+KW   Zinc
+CC   -!- COFACTOR:
+CC       Name=Zn(2+); Xref=ChEBI:CHEBI:29105;
+CC       Note=Binds 2 Zn(2+) ions per subunit. One is catalytic and the
+CC       other provides a structural contribution.
+end case
+XX
+case <Feature:SRHMM001359-3>
+FT   From: P0AB71
+FT   METAL       111    111        Zinc 1; catalytic.
+FT   Group: 1; Condition: H
+FT   METAL       145    145        Zinc 2.
+FT   Group: 2; Condition: D
+FT   METAL       175    175        Zinc 2.
+FT   Group: 3; Condition: E
+FT   METAL       227    227        Zinc 1; catalytic.
+FT   Group: 4; Condition: H
+FT   METAL       265    265        Zinc 1; catalytic.
+FT   Group: 5; Condition: H
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Eukaryota; Ascomycota
+ Bacteria
+**ZA CRV 08-OCT-05 19:3:39
+**ZB CRV 15-MAY-13 13:9:10
+//
+AC   PIRSR001341-5;
+DC   Domain;
+TR   PIRSF; PIRSF001341; -; 1; level=0
+XX
+XX
+case <Feature:SRHMM001341-5>
+FT   From: P00862
+FT   CHAIN      Nter     82       Histidine decarboxylase beta chain.
+FT   Group: 1; Condition: S
+FT   CHAIN        83   Cter       Histidine decarboxylase alpha chain.
+FT   Group: 2; Condition: S
+end case
+XX
+Size: unlimited;
+Related: None;
+Scope:
+ Bacteria
+**ZA CRV 02-FEB-18 12:5:5
+**ZB CRV 02-FEB-18 12:8:45
+//
