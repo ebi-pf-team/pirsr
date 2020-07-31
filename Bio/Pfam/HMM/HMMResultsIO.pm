@@ -431,6 +431,8 @@ sub _readHeader {
       next;
     }elsif(/^Accession/){
       next; 
+    }elsif(/^\[ok\]$/){
+      next;
     } else {
       die "Failed to parse hmmsearch results |$_| in header section\n";
     }
