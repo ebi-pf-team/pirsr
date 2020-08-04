@@ -169,6 +169,7 @@ sub process_rule_folder {
             $rule_hash = $self->align_template($rule_hash);
 
             my $rule_acc = $rule_hash->{'AC'};
+## $rule_acc
 
             open (my $out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed top open ${rule_acc}.json file: $!\n";
 
@@ -184,324 +185,6 @@ sub process_rule_folder {
 
     return;
 }
-
-
-
-
-
-sub align_template {
-    my ($self, $rule) = @_;
-
-
-    my $prot_id = $rule->{'Feature'}->{'from'};
-    ## $prot_id
-
-    my $fasta_file = "$self->{template_folder}/${prot_id}.fa";
-## $fasta_file
-    open (my $in, '<', "$fasta_file") or die "Failed top open $fasta_file file: $!\n";
-
-
-
-    my ($prot_model, $prot_seq);
-
-    my $fasta = <$in>;
-    if ($fasta =~ m/.*\t(.*)\n(.*)/) {
-        $prot_model = $1;
-        $prot_seq = $2;
-    }
-    ## $prot_model
-    ## $prot_seq
-
-# die;
-
-    my $stockholm = `hmmalign data/sr_hmm/${prot_model}.hmm ${fasta_file}`;
-## $stockholm
-    my $alignment_str;
-    while ($stockholm =~ /\n${prot_id}\s+([^\n]*)/g) {
-        $alignment_str .= $1;
-    }
-    ## $alignment_str
-
-
-    my $alignment = align_map($alignment_str);
-    ## @map;
-## $alignment
-
-
-
-## $rules
-
-
-    foreach my $grp (keys %{$rule->{'Groups'}}) {
-            ## $grp
-
-        for my $pos (0 .. $#{$rule->{'Groups'}->{$grp}} ) {
-            ## $pos
-            my $both = 0;
-
-
-            # process start
-            if ($rule->{'Groups'}->{$grp}->[$pos]->{'start'} eq 'Nter') {
-                warn "rule $rule->{AC}, group $grp, pos $pos: Start is Nter.\n";
-                $rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $rule->{'Groups'}->{$grp}->[$pos]->{'start'};
-            } else {
-                if ($alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'start'}] eq "-") {
-                    warn $prot_model." ".$prot_id."/".$rule->{'Groups'}->{$grp}->[$pos]->{'start'}." is non-match state.\n";
-                    $both++;
-                    ## second_if: $rule->{'Groups'}->{$grp}->[$pos]
-                }
-                $rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'start'}];
-            }
-
-
-            # process end
-            if ($rule->{'Groups'}->{$grp}->[$pos]->{'end'} eq 'Cter') {
-                warn "rule $rule->{AC}, group $grp, pos $pos: End is Cter.\n";
-                $rule->{'Groups'}->{$grp}->[$pos]->{hmmEnd} = $rule->{'Groups'}->{$grp}->[$pos]->{'end'};
-                ## $rule
-            } else {
-                if ($alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'end'}] eq "-") {
-                    warn $prot_model." ".$prot_id."/".$rule->{'Groups'}->{$grp}->[$pos]->{'end'}." is non-match state.\n";
-                    $both++;
-
-                    ## third_if: $rule->{'Groups'}->{$grp}->[$pos]
-                }
-                $rule->{'Groups'}->{$grp}->[$pos]->{hmmEnd} = $alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'end'}];
-            }
-
-
-
-            #Some of the disulphide bridges lack on of the positions. However, the two current failing
-            #rules means that we are completely dependent on a length.    This is not ideal, but we
-            #can try.
-            if ($both == 2) {
-                warn "No anchor point for $prot_model ".$prot_id."/".$rule->{'Groups'}->{$grp}->[$pos]->{'start'}."-".$rule->{'Groups'}->{$grp}->[$pos]->{'end'}."\n";
-            }
-
-
-            ## $pos
-            ## $rule
-
-        }
-
-## $rules
-
-    }
-
-
-# $rules
-
-
-
-
-    return $rule;
-}
-
-
-
-
-
-
-sub run_query {
-    my ($self, $query_file) = @_;
-
-### $query_file
-
-    my %query_rules;
-
-
-    my (undef, $out) = tempfile(
-        DIR => '/tmp',
-        UNLINK => 1
-    );
-
-    ### $out
-
-    # my $out = 'result.out';
-
-    my $hmm_library = $self->{hmm_folder} . '/sr_hmm.hmm';
-    ### $hmm_library
-
-    my $cmd = "hmmscan --notextw -o $out $hmm_library $query_file";
-    ### $cmd
-    system($cmd) && die qq(Failed to run "$cmd");
-    ### $out
-# my $hmmRes = Bio::Pfam::HMM::HMMResultsIO->new;
-# ### $hmmRes
-    my $res_obj = Bio::Pfam::HMM::HMMResultsIO->new->parseMultiHMMER3($out);
-### $res_obj
-
-
-
-    # print "Sequence acc\tSeq start\tSeq end\tRule acc\tFeature group\tTrigger\tModel\tTemplate\tTemplate start\tTemplate end\tTaxonomic scope\tFeature type\tFeature description\n";
-    foreach my $query_match (@{$res_obj}) {
-## $query_match
-        my $query_id = $query_match->{'seqName'};
-        next if !$query_id;
-### $query_id
-        $query_rules{$query_id} = {} unless $query_rules{$query_id};
-
-        # loop over HMMs - i.e. Unirule profiles
-        # my $rule_id = $query_match->{hmmName};
-        # ### $rule_id
-        # $rule_id =~ s{\.}{\-}; # FIXME - check what format we are using for HMMs - may not need this
-
-
-        foreach my $target_match (@{$query_match->{'units'}}) {
-            ## $target_match
-            # loop over alignments
-            my $rule_id = $target_match->{'name'};
-            if ($query_rules{$query_id}{$rule_id}) {
-                next;
-            };
-                        ### $rule_id
-            open(my $in, '<', "$self->{rule_folder}/${rule_id}.json") or die "Failed to open $self->{rule_folder}/${rule_id}.json file: $!\n";
-            my $json_string = do { local $/; <$in> };
-            ## $json_string
-            close($in) or die "Failed to close /${rule_id}.json: $!\n";
-
-            my $rule = from_json($json_string);
-            ### $rule
-
-            my $tname = $target_match->{name}; # the sequence ID/accession
-            my $hmm_seq = $target_match->{hmmalign}{hmm};
-            my $query_seq = $target_match->{hmmalign}{seq};
-            my $hmm_from = $target_match->{hmmFrom};
-            my $seq_from = $target_match->{seqFrom};
-            my $map = map_hmm_to_seq($hmm_from, $hmm_seq, $query_seq);
-            ## $map
-            # while (my ($group_id, $group_rules) = each %{$rules->{$rule_id}}) {
-                # Loop over the groups in the rule - check and print
-                # print_group_matches($rule_id, $group_id, $tname, $query_seq, $seq_from, $map, $group_rules, $fh, 0);
-            # }
-
-
-            my $pass = 0;
-
-            foreach my $grp (sort keys %{$rule->{'Groups'}}) {
-## $grp
-
-                my $pass_count = 0;  # pass
-
-                foreach my $pos (0 .. $#{$rule->{'Groups'}->{$grp}} ) {
-
-                    ## $pos
-
-                    my $rule_hmm_start = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmStart'};
-                    my $rule_hmm_end = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmEnd'};
-
-
-                    # Fix for single residue Nter/Cter (this is the majority of cases)
-                    if ($rule_hmm_start eq 'Nter') {
-                        $rule_hmm_start = $rule_hmm_end;
-                    }
-                    if ($rule_hmm_end eq 'Cter') {
-                        $rule_hmm_end = $rule_hmm_start;
-                    }
-                    ### $rule_hmm_start
-                    ### $rule_hmm_end
-
-
-
-                    my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
-                    ## $condition
-
-                    $condition =~ s/-//g;
-                    $condition =~ tr/\(\)x/\{\}\./;
-                    ## $condition
-
-                    my $condition_regex = qr/\A${condition}\z/;
-                    ## $condition_regex
-
-                    # my $target_seq = substr($query_seq, $map->[$rule_hmm_start], $map->[$rule_hmm_start] - $map->[$rule_hmm_start] + 1);
-                    # ## $target_seq
-
-# my $target_seq = substr($query_seq, $map->[$rule_hmm_start], $rule_hmm_end - $rule_hmm_start + 6);
-
-                    my $seq_start = $map->[$rule_hmm_start];
-                    my $seq_end = $map->[$rule_hmm_end];
-                    ### $seq_start
-                    ### $seq_end
-
-
-                    $query_seq =~ s/-//g;
-                    my $target_seq = '';
-                    $target_seq = substr($query_seq, $seq_start, $seq_end - $seq_start + 1) unless (!defined $seq_start || !defined $seq_end);
-
-
-                    # debug failures
-                    if ($target_seq =~ /${condition_regex}/) {
-                        ### TARGET MATCH
-                        my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
-                        ### $condition
-                        ### $condition_regex
-                        ### $target_seq
-                    } else {
-                        ### TARGET NO MATCH
-                        ### $condition
-                        ### $condition_regex
-                        ### $target_seq
-
-                    }
-
-
-
-                    $pass_count += ($target_seq =~ /${condition_regex}/);
-                    ## $pass_count
-
-                }
-
-
-                my $pos_count = @{$rule->{'Groups'}->{$grp}};
-                ## $pos_count
-                ## $pass_count
-
-
-                if (@{$rule->{'Groups'}->{$grp}} == $pass_count) {
-                    ### WE HAVE A PASS!
-                    $pass = 1;
-                } else {
-                    ### NO PASS!
-                    ## $rule
-                    # die;
-                }
-
-
-            }
-### END OF GROUP
-
-        $query_rules{$query_id}{$rule_id} = $pass;
-
-
-    
-
-        }
-
-    
-    }
-
-### %query_rules
-}
-
-
-
-# map base positions from alignment, from query HMM coords to (ungapped) target sequence coords
-sub map_hmm_to_seq {
-    my ($hmm_pos, $hmm, $seq) = @_;
-
-    # so we can extract residues direct from the alignment; need to add the offset later
-    my $seq_pos = 0;
-    my @map;
-
-    for (my $i = 0; $i < length $hmm; $i++) {
-        $map[$hmm_pos] = $seq_pos;
-        $hmm_pos++ if substr($hmm, $i, 1) ne '.';
-        $seq_pos++ if substr($seq, $i, 1) ne '-';
-    }
-
-    return \@map;
-}
-
 
 
 
@@ -596,6 +279,120 @@ sub _parse_rules {
 
 
 
+
+
+sub align_template {
+    my ($self, $rule) = @_;
+
+
+    my $prot_id = $rule->{'Feature'}->{'from'};
+    ## $prot_id
+
+    my $fasta_file = "$self->{template_folder}/${prot_id}.fa";
+## $fasta_file
+    open (my $in, '<', "$fasta_file") or die "Failed top open $fasta_file file: $!\n";
+
+
+
+    my ($prot_model, $prot_seq);
+
+    my $fasta = <$in>;
+    if ($fasta =~ m/.*\t(.*)\n(.*)/) {
+        $prot_model = $1;
+        $prot_seq = $2;
+    }
+    ## $prot_model
+    ## $prot_seq
+
+# die;
+
+    my $stockholm = `hmmalign data/sr_hmm/${prot_model}.hmm ${fasta_file}`;
+## $stockholm
+    my $alignment_str;
+    while ($stockholm =~ /\n${prot_id}\s+([^\n]*)/g) {
+        $alignment_str .= $1;
+    }
+    ## $alignment_str
+
+
+    my $alignment = align_map($alignment_str);
+    ## @map;
+## $alignment
+
+
+
+## $rules
+
+
+    foreach my $grp (keys %{$rule->{'Groups'}}) {
+            ## $grp
+
+        for my $pos (0 .. $#{$rule->{'Groups'}->{$grp}} ) {
+            ## $pos
+            # my $both = 0;
+
+
+            # process start
+            if ($rule->{'Groups'}->{$grp}->[$pos]->{'start'} eq 'Nter') {
+                warn "rule $rule->{AC}, group $grp, pos $pos: Start is Nter.\n";
+                $rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $rule->{'Groups'}->{$grp}->[$pos]->{'start'};
+            } else {
+                # if ($alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'start'}] eq "-") {
+                #     warn $prot_model." ".$prot_id."/".$rule->{'Groups'}->{$grp}->[$pos]->{'start'}." is non-match state.\n";
+                #     $both++;
+                #     ## second_if: $rule->{'Groups'}->{$grp}->[$pos]
+                # }
+                $rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'start'}];
+            }
+
+
+            # process end
+            if ($rule->{'Groups'}->{$grp}->[$pos]->{'end'} eq 'Cter') {
+                warn "rule $rule->{AC}, group $grp, pos $pos: End is Cter.\n";
+                $rule->{'Groups'}->{$grp}->[$pos]->{hmmEnd} = $rule->{'Groups'}->{$grp}->[$pos]->{'end'};
+                ## $rule
+            } else {
+                # if ($alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'end'}] eq "-") {
+                #     warn $prot_model." ".$prot_id."/".$rule->{'Groups'}->{$grp}->[$pos]->{'end'}." is non-match state.\n";
+                #     $both++;
+
+                #     ## third_if: $rule->{'Groups'}->{$grp}->[$pos]
+                # }
+                $rule->{'Groups'}->{$grp}->[$pos]->{hmmEnd} = $alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'end'}];
+            }
+
+
+
+            #Some of the disulphide bridges lack on of the positions. However, the two current failing
+            #rules means that we are completely dependent on a length.    This is not ideal, but we
+            #can try.
+            # if ($both == 2) {
+            #     warn "No anchor point for $prot_model ".$prot_id."/".$rule->{'Groups'}->{$grp}->[$pos]->{'start'}."-".$rule->{'Groups'}->{$grp}->[$pos]->{'end'}."\n";
+            # }
+
+
+            ## $pos
+            ## $rule
+
+        }
+
+## $rules
+
+    }
+
+
+# $rules
+
+
+
+
+    return $rule;
+}
+
+
+
+
+
 # returns array of seq->hmm positions for a given alignment string
 sub align_map {
     my ($alignment) = @_;
@@ -618,13 +415,228 @@ sub align_map {
             $hmm_pos++;
         } elsif ($pos =~ /[a-z]/) {
             #hmm insert pos
-            $map[$seq_pos] = '-';
+
+            # non-match state
+            # $map[$seq_pos] = '-';
+            # Use valid hmm pos
+            $map[$seq_pos] = $hmm_pos;
             $seq_pos++;
         }
     }
 
     return \@map;
 }
+
+
+
+
+
+
+
+sub run_query {
+    my ($self, $query_file) = @_;
+
+## $query_file
+
+    my %query_rules;
+
+
+    my (undef, $out) = tempfile(
+        DIR => '/tmp',
+        UNLINK => 1
+    );
+
+    ## $out
+
+    # my $out = 'result.out';
+
+    my $hmm_library = $self->{hmm_folder} . '/sr_hmm.hmm';
+    ## $hmm_library
+
+    my $cmd = "hmmscan --notextw -o $out $hmm_library $query_file";
+    ## $cmd
+    system($cmd) && die qq(Failed to run "$cmd");
+    ## $out
+# my $hmmRes = Bio::Pfam::HMM::HMMResultsIO->new;
+# ## $hmmRes
+    my $res_obj = Bio::Pfam::HMM::HMMResultsIO->new->parseMultiHMMER3($out);
+## $res_obj
+
+
+
+    # print "Sequence acc\tSeq start\tSeq end\tRule acc\tFeature group\tTrigger\tModel\tTemplate\tTemplate start\tTemplate end\tTaxonomic scope\tFeature type\tFeature description\n";
+    foreach my $query_match (@{$res_obj}) {
+## $query_match
+        my $query_id = $query_match->{'seqName'};
+        next if !$query_id;
+## $query_id
+        $query_rules{$query_id} = {} unless $query_rules{$query_id};
+
+        # loop over HMMs - i.e. Unirule profiles
+        # my $rule_id = $query_match->{hmmName};
+        # ## $rule_id
+        # $rule_id =~ s{\.}{\-}; # FIXME - check what format we are using for HMMs - may not need this
+
+
+        foreach my $target_match (@{$query_match->{'units'}}) {
+            ## $target_match
+            # loop over alignments
+            my $rule_id = $target_match->{'name'};
+            if ($query_rules{$query_id}{$rule_id}) {
+                next;
+            };
+                        ### $rule_id
+            open(my $in, '<', "$self->{rule_folder}/${rule_id}.json") or die "Failed to open $self->{rule_folder}/${rule_id}.json file: $!\n";
+            my $json_string = do { local $/; <$in> };
+            ## $json_string
+            close($in) or die "Failed to close /${rule_id}.json: $!\n";
+
+            my $rule = from_json($json_string);
+            ### $rule
+
+            my $tname = $target_match->{name}; # the sequence ID/accession
+            my $hmm_seq = $target_match->{hmmalign}{hmm};
+            my $query_seq = $target_match->{hmmalign}{seq};
+            my $hmm_from = $target_match->{hmmFrom};
+            my $seq_from = $target_match->{seqFrom};
+            my $map = map_hmm_to_seq($hmm_from, $hmm_seq, $query_seq);
+            ## $map
+            # while (my ($group_id, $group_rules) = each %{$rules->{$rule_id}}) {
+                # Loop over the groups in the rule - check and print
+                # print_group_matches($rule_id, $group_id, $tname, $query_seq, $seq_from, $map, $group_rules, $fh, 0);
+            # }
+
+
+            my $pass = 0;
+
+            foreach my $grp (sort keys %{$rule->{'Groups'}}) {
+## $grp
+
+                my $pass_count = 0;  # pass
+
+                foreach my $pos (0 .. $#{$rule->{'Groups'}->{$grp}} ) {
+
+                    ## $pos
+
+                    my $rule_hmm_start = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmStart'};
+                    my $rule_hmm_end = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmEnd'};
+
+
+                    # Fix for single residue Nter/Cter (this is the majority of cases)
+                    if ($rule_hmm_start eq 'Nter') {
+                        $rule_hmm_start = $rule_hmm_end;
+                    }
+                    if ($rule_hmm_end eq 'Cter') {
+                        $rule_hmm_end = $rule_hmm_start;
+                    }
+                    ### $rule_hmm_start
+                    ### $rule_hmm_end
+
+
+
+                    my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
+                    ## $condition
+
+                    $condition =~ s/-//g;
+                    $condition =~ tr/\(\)x/\{\}\./;
+                    ## $condition
+
+                    my $condition_regex = qr/\A${condition}\z/;
+                    ## $condition_regex
+
+                    # my $target_seq = substr($query_seq, $map->[$rule_hmm_start], $map->[$rule_hmm_start] - $map->[$rule_hmm_start] + 1);
+                    # ## $target_seq
+
+# my $target_seq = substr($query_seq, $map->[$rule_hmm_start], $rule_hmm_end - $rule_hmm_start + 6);
+
+                    my $seq_start = $map->[$rule_hmm_start];
+                    my $seq_end = $map->[$rule_hmm_end];
+                    ## $seq_start
+                    ## $seq_end
+
+
+                    $query_seq =~ s/-//g;
+                    my $target_seq = '';
+                    $target_seq = substr($query_seq, $seq_start, $seq_end - $seq_start + 1) unless (!defined $seq_start || !defined $seq_end);
+
+
+                    # debug failures
+                    if ($target_seq =~ /${condition_regex}/) {
+                        ## TARGET MATCH
+                        my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
+                        ## $condition
+                        ## $condition_regex
+                        ## $target_seq
+                    } else {
+                        ## TARGET NO MATCH
+                        ## $condition
+                        ## $condition_regex
+                        ## $target_seq
+
+                    }
+
+
+
+                    $pass_count += ($target_seq =~ /${condition_regex}/);
+                    ## $pass_count
+
+                }
+
+
+                my $pos_count = @{$rule->{'Groups'}->{$grp}};
+                ## $pos_count
+                ## $pass_count
+
+
+                if (@{$rule->{'Groups'}->{$grp}} == $pass_count) {
+                    ## WE HAVE A PASS!
+                    $pass = 1;
+                } else {
+                    ## NO PASS!
+                    ## $rule
+                    # die;
+                }
+
+
+            }
+## END OF GROUP
+
+        $query_rules{$query_id}{$rule_id} = $pass;
+
+
+    
+
+        }
+
+    
+    }
+
+### %query_rules
+}
+
+
+
+# map base positions from alignment, from query HMM coords to (ungapped) target sequence coords
+sub map_hmm_to_seq {
+    my ($hmm_pos, $hmm, $seq) = @_;
+
+    # so we can extract residues direct from the alignment; need to add the offset later
+    my $seq_pos = 0;
+    my @map;
+
+    for (my $i = 0; $i < length $hmm; $i++) {
+        $map[$hmm_pos] = $seq_pos;
+        $hmm_pos++ if substr($hmm, $i, 1) ne '.';
+        $seq_pos++ if substr($seq, $i, 1) ne '-';
+    }
+
+    return \@map;
+}
+
+
+
+
+
 
 
 
