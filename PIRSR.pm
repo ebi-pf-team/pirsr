@@ -485,14 +485,14 @@ sub run_query {
             if ($query_rules{$query_id}{$rule_id}) {
                 next;
             };
-                        ### $rule_id
+            ## $rule_id
             open(my $in, '<', "$self->{rule_folder}/${rule_id}.json") or die "Failed to open $self->{rule_folder}/${rule_id}.json file: $!\n";
             my $json_string = do { local $/; <$in> };
             ## $json_string
             close($in) or die "Failed to close /${rule_id}.json: $!\n";
 
             my $rule = from_json($json_string);
-            ### $rule
+            ## $rule
 
             my $tname = $target_match->{name}; # the sequence ID/accession
             my $hmm_seq = $target_match->{hmmalign}{hmm};
@@ -518,20 +518,6 @@ sub run_query {
 
                     ## $pos
 
-                    my $rule_hmm_start = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmStart'};
-                    my $rule_hmm_end = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmEnd'};
-
-
-                    # Fix for single residue Nter/Cter (this is the majority of cases)
-                    if ($rule_hmm_start eq 'Nter') {
-                        $rule_hmm_start = $rule_hmm_end;
-                    }
-                    if ($rule_hmm_end eq 'Cter') {
-                        $rule_hmm_end = $rule_hmm_start;
-                    }
-                    ### $rule_hmm_start
-                    ### $rule_hmm_end
-
 
 
                     my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
@@ -543,6 +529,28 @@ sub run_query {
 
                     my $condition_regex = qr/\A${condition}\z/;
                     ## $condition_regex
+
+
+
+
+
+                    my $rule_hmm_start = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmStart'};
+                    my $rule_hmm_end = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmEnd'};
+
+
+                    # Fix for single residue Nter/Cter location (there can be only one at a time)
+                    if ($rule_hmm_start eq 'Nter') {
+                        my $cond_match = $condition;
+                        $rule_hmm_start = $rule_hmm_end - get_ter_offset($cond_match);
+                    }
+                    if ($rule_hmm_end eq 'Cter') {
+                        my $cond_match = $condition;
+                        $rule_hmm_end = $rule_hmm_start + get_ter_offset($cond_match);
+                    }
+                    ## $rule_hmm_start
+                    ## $rule_hmm_end
+
+
 
                     # my $target_seq = substr($query_seq, $map->[$rule_hmm_start], $map->[$rule_hmm_start] - $map->[$rule_hmm_start] + 1);
                     # ## $target_seq
@@ -561,19 +569,20 @@ sub run_query {
 
 
                     # debug failures
-                    if ($target_seq =~ /${condition_regex}/) {
-                        ## TARGET MATCH
-                        my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
-                        ## $condition
-                        ## $condition_regex
-                        ## $target_seq
-                    } else {
-                        ## TARGET NO MATCH
-                        ## $condition
-                        ## $condition_regex
-                        ## $target_seq
+                    # if ($target_seq =~ /${condition_regex}/) {
+                    #     ### TARGET MATCH
+                    #     my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
+                    #     ### $condition
+                    #     ### $condition_regex
+                    #     ### $target_seq
+                    # }
+                    # else {
+                    #     ### TARGET NO MATCH
+                    #     ### $condition
+                    #     ### $condition_regex
+                    #     ### $target_seq
 
-                    }
+                    # }
 
 
 
@@ -583,7 +592,7 @@ sub run_query {
                 }
 
 
-                my $pos_count = @{$rule->{'Groups'}->{$grp}};
+                # my $pos_count = @{$rule->{'Groups'}->{$grp}};
                 ## $pos_count
                 ## $pass_count
 
@@ -591,11 +600,12 @@ sub run_query {
                 if (@{$rule->{'Groups'}->{$grp}} == $pass_count) {
                     ## WE HAVE A PASS!
                     $pass = 1;
-                } else {
-                    ## NO PASS!
-                    ## $rule
-                    # die;
                 }
+                # else {
+                #     ## NO PASS!
+                #     ## $rule
+                #     # die;
+                # }
 
 
             }
@@ -631,6 +641,27 @@ sub map_hmm_to_seq {
     }
 
     return \@map;
+}
+
+
+# When hmmStart/hmmEnd is Nter/Cter, calculate offset for termination based on how many bases long the condition is
+sub get_ter_offset {
+    my ($cond_match) = @_;
+
+    my $offset = -1;
+
+    # transform the condition in a string of char counts
+    $cond_match =~ s/\[\w+\]/1/;
+    $cond_match =~ s/[A-Z]/1/g;
+    $cond_match =~ s/\.\{//g;
+    $cond_match =~ s/\}//g;
+
+    foreach my $char (split //, $cond_match) {
+      $offset += $char;
+    }
+
+    return $offset;
+
 }
 
 
