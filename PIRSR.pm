@@ -39,11 +39,16 @@ has 'rule_folder' => (
 sub process_data {
     my ($self) = @_;
 
-    $self->process_template_folder();
-    $self->process_hmm_folder();
-    $self->process_rule_folder();
+    my $template_ok = $self->process_template_folder();
+    my $hmm_ok = $self->process_hmm_folder();
+    my $rule_ok = $self->process_rule_folder();
 
-    return;
+    if ($template_ok && $hmm_ok && $rule_ok) {
+        return 1;
+    } else {
+        warn ("Something wrong in preprocessing");
+        return 0;
+    }
 }
 
 
@@ -100,7 +105,7 @@ sub process_template_folder {
 
 
 
-    return;
+    return 1;
 }
 
 
@@ -149,7 +154,7 @@ sub process_hmm_folder {
         }
     }
 
-    return;
+    return 1;
 }
 
 
@@ -183,7 +188,7 @@ sub process_rule_folder {
 
 
 
-    return;
+    return 1;
 }
 
 
@@ -335,7 +340,34 @@ sub align_template {
             # process start
             if ($rule->{'Groups'}->{$grp}->[$pos]->{'start'} eq 'Nter') {
                 warn "rule $rule->{AC}, group $grp, pos $pos: Start is Nter.\n";
-                $rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $rule->{'Groups'}->{$grp}->[$pos]->{'start'};
+                ## $rule
+
+                #my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{condition};
+
+                my $offset = get_ter_offset($rule->{'Groups'}->{$grp}->[$pos]->{condition});
+### $offset
+
+                $rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'end'}] - $offset;
+
+
+                ## $rule
+
+
+         # # Fix for single residue Nter/Cter location (there can be only one at a time)
+                    # if ($rule_hmm_start eq 'Nter') {
+                    #     my $cond_match = $condition;
+                    #     $rule_hmm_start = $rule_hmm_end - get_ter_offset($cond_match);
+                    # }
+                    # if ($rule_hmm_end eq 'Cter') {
+                    #     my $cond_match = $condition;
+                    #     $rule_hmm_end = $rule_hmm_start + get_ter_offset($cond_match);
+                    # }
+                    # ## $rule_hmm_start
+                    # ## $rule_hmm_end
+
+
+
+
             } else {
                 # if ($alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'start'}] eq "-") {
                 #     warn $prot_model." ".$prot_id."/".$rule->{'Groups'}->{$grp}->[$pos]->{'start'}." is non-match state.\n";
@@ -349,7 +381,12 @@ sub align_template {
             # process end
             if ($rule->{'Groups'}->{$grp}->[$pos]->{'end'} eq 'Cter') {
                 warn "rule $rule->{AC}, group $grp, pos $pos: End is Cter.\n";
-                $rule->{'Groups'}->{$grp}->[$pos]->{hmmEnd} = $rule->{'Groups'}->{$grp}->[$pos]->{'end'};
+                ## $rule
+                my $offset = get_ter_offset($rule->{'Groups'}->{$grp}->[$pos]->{condition});
+### $offset
+
+                $rule->{'Groups'}->{$grp}->[$pos]->{hmmEnd} = $alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'start'}] + $offset;
+
                 ## $rule
             } else {
                 # if ($alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'end'}] eq "-") {
@@ -376,7 +413,6 @@ sub align_template {
 
         }
 
-## $rules
 
     }
 
@@ -431,6 +467,34 @@ sub align_map {
 
 
 
+# When hmmStart/hmmEnd is Nter/Cter, calculate offset for termination based on how many bases long the condition is
+sub get_ter_offset {
+    my ($cond_match) = @_;
+
+### $cond_match
+
+    my $offset = -1;
+
+    # transform the condition in a string of char counts
+    $cond_match =~ s/-//g;
+    $cond_match =~ tr/\(\)x/\{\}\./;
+    $cond_match =~ s/\[\w+\]/1/;
+    $cond_match =~ s/[A-Z]/1/g;
+    $cond_match =~ s/\.\{//g;
+    $cond_match =~ s/\}//g;
+
+    foreach my $char (split //, $cond_match) {
+      $offset += $char;
+    }
+
+    return $offset;
+
+}
+
+
+
+
+
 
 
 sub run_query {
@@ -454,7 +518,7 @@ sub run_query {
     ## $hmm_library
 
     my $cmd = "hmmscan --notextw -o $out $hmm_library $query_file";
-    ## $cmd
+    ### $cmd
     system($cmd) && die qq(Failed to run "$cmd");
     ## $out
 # my $hmmRes = Bio::Pfam::HMM::HMMResultsIO->new;
@@ -538,17 +602,17 @@ sub run_query {
                     my $rule_hmm_end = $rule->{'Groups'}->{$grp}->[$pos]->{'hmmEnd'};
 
 
-                    # Fix for single residue Nter/Cter location (there can be only one at a time)
-                    if ($rule_hmm_start eq 'Nter') {
-                        my $cond_match = $condition;
-                        $rule_hmm_start = $rule_hmm_end - get_ter_offset($cond_match);
-                    }
-                    if ($rule_hmm_end eq 'Cter') {
-                        my $cond_match = $condition;
-                        $rule_hmm_end = $rule_hmm_start + get_ter_offset($cond_match);
-                    }
-                    ## $rule_hmm_start
-                    ## $rule_hmm_end
+                    # # Fix for single residue Nter/Cter location (there can be only one at a time)
+                    # if ($rule_hmm_start eq 'Nter') {
+                    #     my $cond_match = $condition;
+                    #     $rule_hmm_start = $rule_hmm_end - get_ter_offset($cond_match);
+                    # }
+                    # if ($rule_hmm_end eq 'Cter') {
+                    #     my $cond_match = $condition;
+                    #     $rule_hmm_end = $rule_hmm_start + get_ter_offset($cond_match);
+                    # }
+                    # ## $rule_hmm_start
+                    # ## $rule_hmm_end
 
 
 
@@ -567,8 +631,20 @@ sub run_query {
                     my $target_seq = '';
                     $target_seq = substr($query_seq, $seq_start, $seq_end - $seq_start + 1) unless (!defined $seq_start || !defined $seq_end);
 
+                    if (!$target_seq) {
+                        warn "Target sequence out of alignment borders";
+                        ## $condition
+                        ## $condition_regex
+                        ## $target_seq
+                        ## $seq_start
+                        ## $seq_end
+                        ## $rule_hmm_start
+                        ## $rule_hmm_end
+                        ## $query_seq
+                    }
 
-                    # debug failures
+
+                    # # debug failures
                     # if ($target_seq =~ /${condition_regex}/) {
                     #     ### TARGET MATCH
                     #     my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{'condition'};
@@ -578,10 +654,10 @@ sub run_query {
                     # }
                     # else {
                     #     ### TARGET NO MATCH
+                    #     ### $rule
                     #     ### $condition
                     #     ### $condition_regex
                     #     ### $target_seq
-
                     # }
 
 
@@ -643,26 +719,6 @@ sub map_hmm_to_seq {
     return \@map;
 }
 
-
-# When hmmStart/hmmEnd is Nter/Cter, calculate offset for termination based on how many bases long the condition is
-sub get_ter_offset {
-    my ($cond_match) = @_;
-
-    my $offset = -1;
-
-    # transform the condition in a string of char counts
-    $cond_match =~ s/\[\w+\]/1/;
-    $cond_match =~ s/[A-Z]/1/g;
-    $cond_match =~ s/\.\{//g;
-    $cond_match =~ s/\}//g;
-
-    foreach my $char (split //, $cond_match) {
-      $offset += $char;
-    }
-
-    return $offset;
-
-}
 
 
 
