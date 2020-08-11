@@ -34,6 +34,11 @@ has 'rule_folder' => (
     required => 1
 );
 
+has 'output_file' => (
+    is       => 'rw',
+    isa      => 'Str',
+    predicate => 'has_output_file',
+);
 
 
 sub process_data {
@@ -85,11 +90,11 @@ sub process_template_folder {
 ## $seq
                 # $data->{$prot_it}->{'seq'} = $block;
 
-                open (my $out, '>', "${template_folder}/${prot_it}.fa" ) or die "Failed top open ${prot_it}.fa file: $!\n";
+                open (my $fa_out, '>', "${template_folder}/${prot_it}.fa" ) or die "Failed top open ${prot_it}.fa file: $!\n";
 
-                print $out ">${header}\n${seq}\n";
+                print $fa_out ">${header}\n${seq}\n";
 
-                close($out) or die "Failed to close ${prot_it}.fa\n";
+                close($fa_out) or die "Failed to close ${prot_it}.fa\n";
 
                 # $data->{$prot_it}->{'file'} = "${template_folder}/${prot_it}.fa";
 
@@ -117,14 +122,14 @@ sub process_hmm_folder {
 
     # opendir(my $dir, $hmm_folder) or die "Could not open folder '$hmm_folder': $!\n";
 
-    open(my $out_fh, '>', "$hmm_folder/sr_hmm.hmm") or die "Can't open '$hmm_folder/sr_hmm.hmm': $!\n";
+    open(my $hmm_out, '>', "$hmm_folder/sr_hmm.hmm") or die "Can't open '$hmm_folder/sr_hmm.hmm': $!\n";
 
     foreach my $hmm_file ( glob("$hmm_folder/PIRSR*.hmm") ) {
 ## $hmm_file
-        open(my $in_fh, '<', "$hmm_file") or die "Can't open '$hmm_file': $!\n";
+        open(my $hmm_in, '<', "$hmm_file") or die "Can't open '$hmm_file': $!\n";
         # slurp individual hmm file
-        my $hmm = do { local $/; <$in_fh> };
-        close($in_fh) or die "Can't close '$hmm_file' after reading: $!\n";
+        my $hmm = do { local $/; <$hmm_in> };
+        close($hmm_in) or die "Can't close '$hmm_file' after reading: $!\n";
 
         # fix hmm name
         my $hmm_name = $hmm_file;
@@ -136,11 +141,11 @@ sub process_hmm_folder {
         $hmm =~ s/NAME\s+.*?\n/NAME  ${hmm_name}\n/;
 
         # print it out to library file
-        print $out_fh $hmm;
+        print $hmm_out $hmm;
 
     }
 
-    close($out_fh) or die "Can't close '$hmm_folder/sr_hmm.hmm' after writing: $!\n";
+    close($hmm_out) or die "Can't close '$hmm_folder/sr_hmm.hmm' after writing: $!\n";
 
     # create auxfiles
     my $cmd = "hmmpress ${hmm_folder}/sr_hmm.hmm";
@@ -166,8 +171,8 @@ sub process_rule_folder {
 
     do {
         local $/ = "//\n";
-        open (my $in, '<', "${rule_folder}/PIRSR.uru") or die "Failed top open ${rule_folder}/PIRSR.uru file: $!\n";
-        while (my $block = <$in>) {
+        open (my $uru_in, '<', "${rule_folder}/PIRSR.uru") or die "Failed top open ${rule_folder}/PIRSR.uru file: $!\n";
+        while (my $block = <$uru_in>) {
             my $rule_hash = _parse_rules($block);
             ## $rule_hash
 
@@ -176,14 +181,14 @@ sub process_rule_folder {
             my $rule_acc = $rule_hash->{'AC'};
 ## $rule_acc
 
-            open (my $out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed top open ${rule_acc}.json file: $!\n";
+            open (my $uru_out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed top open ${rule_acc}.json file: $!\n";
 
             my $json_uru = to_json( $rule_hash, { pretty => 1 } );
-            print $out $json_uru;
+            print $uru_out $json_uru;
 
-            close($out) or die "Failed to close ${rule_acc}.json\n";
+            close($uru_out) or die "Failed to close ${rule_acc}.json\n";
         }
-        close($in) or die "Failed to close ${rule_folder}/PIRSR.uru: $!\n";
+        close($uru_in) or die "Failed to close ${rule_folder}/PIRSR.uru: $!\n";
     };
 
 
@@ -676,6 +681,30 @@ sub run_query {
                 if (@{$rule->{'Groups'}->{$grp}} == $pass_count) {
                     ## WE HAVE A PASS!
                     $pass = 1;
+
+
+                    $query_rules{$query_id}{$rule_id}{'aliAcc'} = $target_match->{'aliAcc'};
+                    $query_rules{$query_id}{$rule_id}{'domEvalue'} = $target_match->{'domEvalue'};
+                    $query_rules{$query_id}{$rule_id}{'envFrom'} = $target_match->{'envFrom'};
+                    $query_rules{$query_id}{$rule_id}{'envTo'} = $target_match->{'envTo'};
+                    $query_rules{$query_id}{$rule_id}{'hmmFrom'} = $target_match->{'hmmFrom'};
+                    $query_rules{$query_id}{$rule_id}{'hmmTo'} = $target_match->{'hmmTo'};
+                    $query_rules{$query_id}{$rule_id}{'seqFrom'} = $target_match->{'seqFrom'};
+                    $query_rules{$query_id}{$rule_id}{'seqTo'} = $target_match->{'seqTo'};
+                    $query_rules{$query_id}{$rule_id}{'evalue'} = $target_match->{'evalue'};
+                    $query_rules{$query_id}{$rule_id}{'hmmalign'} = $target_match->{'hmmalign'};
+
+
+                    $query_rules{$query_id}{$rule_id}{'Scope'} = $rule->{'Scope'};
+
+# my $group = $rule->{'Groups'}->{$grp};
+# ### $group
+                    push @{$query_rules{$query_id}{$rule_id}{'Rules'}}, @{$rule->{'Groups'}->{$grp}};
+                    # $query_rules{$query_id}{$rule_id}{} = $target_match->{};
+
+
+
+
                 }
                 # else {
                 #     ## NO PASS!
@@ -687,8 +716,7 @@ sub run_query {
             }
 ## END OF GROUP
 
-        $query_rules{$query_id}{$rule_id} = $pass;
-
+        # $query_rules{$query_id}{$rule_id} = $pass;
 
     
 
@@ -697,7 +725,35 @@ sub run_query {
     
     }
 
-### %query_rules
+
+
+
+    my $json_out = to_json( \%query_rules, { pretty => 1 } );
+
+
+
+    my $out;
+    if ($self->has_output_file) {
+        # my $has_out = $self->has_output_file;
+        # ### $has_out
+
+        # my $out_file = $self->output_file;
+        # ### $out_file
+
+        open ($out, '>', $self->output_file) or die "Failed top open " . $self->output_file . " file: $!\n";
+        select($out);
+    }
+
+    print $json_out;
+
+
+    if ($self->has_output_file) {
+        close($out) or die "Failed to close" . $self->output_file . " file: $!\n";
+        select STDOUT;
+    }
+
+
+## %query_rules
 }
 
 
