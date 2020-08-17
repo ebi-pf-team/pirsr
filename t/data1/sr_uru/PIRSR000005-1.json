@@ -1,6 +1,8 @@
 {
+   "AC" : "PIRSR000005-1",
+   "TR" : "PIRSF; PIRSF000005; -; 1",
    "Size" : "unlimited",
-   "DC" : "Domain",
+   "Related" : "None",
    "Feature" : {
       "model" : "SRHMM000005-1",
       "from" : "Q52369"
@@ -8,51 +10,49 @@
    "Scope" : [
       "Bacteria"
    ],
-   "TR" : "PIRSF; PIRSF000005; -; 1",
    "Groups" : {
       "1" : [
          {
-            "hmmEnd" : 43,
-            "label" : "BINDING",
-            "group" : "1",
-            "end" : 34,
-            "hmmStart" : 43,
             "desc" : "Heme 1 (covalent).",
+            "condition" : "C",
+            "label" : "BINDING",
+            "hmmEnd" : 43,
+            "end" : 34,
             "start" : 34,
-            "condition" : "C"
+            "group" : "1",
+            "hmmStart" : 43
          },
          {
-            "hmmEnd" : 46,
-            "label" : "BINDING",
-            "hmmStart" : 46,
             "desc" : "Heme 1 (covalent).",
-            "end" : 37,
-            "group" : "1",
+            "label" : "BINDING",
             "condition" : "C",
+            "end" : 37,
+            "hmmEnd" : 46,
+            "hmmStart" : 46,
+            "group" : "1",
             "start" : 37
          },
          {
             "hmmEnd" : 144,
-            "label" : "BINDING",
             "end" : 139,
+            "start" : 139,
             "group" : "1",
-            "desc" : "Heme 2 (covalent).",
             "hmmStart" : 144,
+            "desc" : "Heme 2 (covalent).",
             "condition" : "C",
-            "start" : 139
+            "label" : "BINDING"
          },
          {
-            "group" : "1",
-            "end" : 142,
-            "hmmStart" : 147,
+            "condition" : "C",
+            "label" : "BINDING",
             "desc" : "Heme 2 (covalent).",
             "start" : 142,
-            "condition" : "C",
+            "group" : "1",
+            "hmmStart" : 147,
             "hmmEnd" : 147,
-            "label" : "BINDING"
+            "end" : 142
          }
       ]
    },
-   "Related" : "None",
-   "AC" : "PIRSR000005-1"
+   "DC" : "Domain"
 }
