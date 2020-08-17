@@ -560,7 +560,7 @@ sub run_query {
 
                     $query_rules{$query_id}{$rule_id}{'Scope'} = $rule->{'Scope'};
 
-                    push @{$query_rules{$query_id}{$rule_id}{'Rules'}}, @{$rule->{'Groups'}->{$grp}};
+                    push @{$query_rules{$query_id}{$rule_id}{'RuleSites'}}, @{$rule->{'Groups'}->{$grp}};
 
                 }
                 # # debug failures
