@@ -10,6 +10,7 @@ use namespace::autoclean;
 
 use Bio::Pfam::HMM::HMMResultsIO;
 use File::Temp qw/tempfile/;
+use File::Copy;
 
 
 use Smart::Comments;
@@ -34,11 +35,64 @@ has 'rule_folder' => (
     required => 1
 );
 
-has 'output_file' => (
+has 'verbose' => (
     is       => 'rw',
-    isa      => 'Str',
-    predicate => 'has_output_file',
+    isa      => 'Bool',
+    default  => 0
 );
+
+# has 'hmmer_path' => (
+#     is       => 'rw',
+#     isa      => 'Str',
+#     default  => ''
+# );
+
+# has 'cpus' => (
+#     is       => 'rw',
+#     isa      => 'Num',
+#     default  => 1
+# );
+
+
+
+
+# returns array of seq->hmm positions for a given alignment string
+sub prepare_data_paths {
+    my ($data_folder, $hmm_folder, $template_folder, $rule_folder) = @_;
+
+    $data_folder =~ s/\/$//;
+
+    # set the default hmm_folder
+    if (!$hmm_folder && $data_folder) {
+        $hmm_folder = "${data_folder}/sr_hmm";
+    }
+
+    # set the default template_folder
+    if (!$template_folder && $data_folder) {
+        $template_folder = "${data_folder}/sr_tp";
+    }
+
+    # set the default rule_folder and move the uru file there
+    if (!$rule_folder && $data_folder) {
+        $rule_folder = "${data_folder}/sr_uru";
+        if (!-d $rule_folder) {
+            mkdir($rule_folder);
+        }
+
+        if (!-e "${rule_folder}/PIRSR.uru") {
+            move("${data_folder}/PIRSR.uru", "${rule_folder}/PIRSR.uru");
+        }
+    }
+
+    return {
+        template_folder => $template_folder,
+        hmm_folder      => $hmm_folder,
+        rule_folder     => $rule_folder,
+    }
+}
+
+
+
 
 
 sub process_data {
@@ -51,7 +105,7 @@ sub process_data {
     if ($template_ok && $hmm_ok && $rule_ok) {
         return 1;
     } else {
-        warn ("Something wrong in preprocessing");
+        warn ("Error preprocessing")  if ($self->verbose);
         return 0;
     }
 }
@@ -63,8 +117,6 @@ sub process_template_folder {
     my ($self) = @_;
 
     my $template_folder = $self->template_folder;
-
-## $template_folder
 
     # parse the sr_tp.seq a seq block at a time
     do {
@@ -87,8 +139,6 @@ sub process_template_folder {
                 $block =~ s/\n//g;
 
                 my $seq = $block;
-## $seq
-                # $data->{$prot_it}->{'seq'} = $block;
 
                 open (my $fa_out, '>', "${template_folder}/${prot_it}.fa" ) or die "Failed top open ${prot_it}.fa file: $!\n";
 
@@ -96,15 +146,12 @@ sub process_template_folder {
 
                 close($fa_out) or die "Failed to close ${prot_it}.fa\n";
 
-                # $data->{$prot_it}->{'file'} = "${template_folder}/${prot_it}.fa";
 
             } else {
-                die "ERROR: failed to parse fasta block: \"$block\"\n";
+                die "Failed to parse fasta block: \"$block\"\n";
             }
-            ## $block
-            # my $stuff = _process_rules_block($block);
-            ## $stuffs
         }
+
         close($in) or die "Failed to close $template_folder/sr_tp.seq file\n";
     };
 
@@ -153,7 +200,7 @@ sub process_hmm_folder {
     foreach my $ext (qw(h3p h3m h3f h3i)) {
         if (!-e "${hmm_folder}/sr_hmm.hmm.${ext}") {
             # Looks like the hmm database is not pressed
-            warn "Running hmmpress on ${hmm_folder}/sr_hmm.hmm\n";
+            warn "Running hmmpress on ${hmm_folder}/sr_hmm.hmm\n" if ($self->verbose);
             system("hmmpress ${hmm_folder}/sr_hmm.hmm") and die "Could not run hmmpress: $!\n";
             last;
         }
@@ -181,7 +228,7 @@ sub process_rule_folder {
             my $rule_acc = $rule_hash->{'AC'};
 ## $rule_acc
 
-            open (my $uru_out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed top open ${rule_acc}.json file: $!\n";
+            open (my $uru_out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed to open ${rule_acc}.json file: $!\n";
 
             my $json_uru = to_json( $rule_hash, { pretty => 1 } );
             print $uru_out $json_uru;
@@ -263,7 +310,7 @@ sub _parse_rules {
 
 
                 } else {
-                    die "ERROR: failed to parse Group line: \"$line\"\n";
+                    die "Failed to parse Group line: \"$line\"\n";
                 }
 
 
@@ -277,7 +324,7 @@ sub _parse_rules {
 # print " ignoring \"$line\"\n";
             }
         } else {
-            die "ERROR: failed to parse rules line: \"$line\"\n";
+            die "Failed to parse rules line: \"$line\"\n";
         }
     }
 
@@ -296,10 +343,9 @@ sub align_template {
 
 
     my $prot_id = $rule->{'Feature'}->{'from'};
-    ## $prot_id
 
     my $fasta_file = "$self->{template_folder}/${prot_id}.fa";
-## $fasta_file
+
     open (my $in, '<', "$fasta_file") or die "Failed top open $fasta_file file: $!\n";
 
 
@@ -307,31 +353,22 @@ sub align_template {
     my ($prot_model, $prot_seq);
 
     my $fasta = <$in>;
-    if ($fasta =~ m/.*\t(.*)\n(.*)/) {
+
+    if ($fasta =~ m/.*\t(.*)\n(.*)\n?/) {
         $prot_model = $1;
         $prot_seq = $2;
     }
-    ## $prot_model
-    ## $prot_seq
 
-# die;
 
     my $stockholm = `hmmalign data/sr_hmm/${prot_model}.hmm ${fasta_file}`;
-## $stockholm
+
     my $alignment_str;
     while ($stockholm =~ /\n${prot_id}\s+([^\n]*)/g) {
         $alignment_str .= $1;
     }
-    ## $alignment_str
 
 
     my $alignment = align_map($alignment_str);
-    ## @map;
-## $alignment
-
-
-
-## $rules
 
 
     foreach my $grp (keys %{$rule->{'Groups'}}) {
@@ -344,7 +381,7 @@ sub align_template {
 
             # process start
             if ($rule->{'Groups'}->{$grp}->[$pos]->{'start'} eq 'Nter') {
-                warn "rule $rule->{AC}, group $grp, pos $pos: Start is Nter.\n";
+                warn "rule $rule->{AC}, group $grp, pos $pos: Start is Nter.\n" if ($self->verbose);
                 ## $rule
 
                 #my $condition = $rule->{'Groups'}->{$grp}->[$pos]->{condition};
@@ -385,7 +422,7 @@ sub align_template {
 
             # process end
             if ($rule->{'Groups'}->{$grp}->[$pos]->{'end'} eq 'Cter') {
-                warn "rule $rule->{AC}, group $grp, pos $pos: End is Cter.\n";
+                warn "rule $rule->{AC}, group $grp, pos $pos: End is Cter.\n" if ($self->verbose);
                 ## $rule
                 my $offset = get_ter_offset($rule->{'Groups'}->{$grp}->[$pos]->{condition});
 ### $offset
@@ -576,7 +613,6 @@ sub run_query {
             # }
 
 
-            my $pass = 0;
 
             foreach my $grp (sort keys %{$rule->{'Groups'}}) {
 ## $grp
@@ -637,7 +673,7 @@ sub run_query {
                     $target_seq = substr($query_seq, $seq_start, $seq_end - $seq_start + 1) unless (!defined $seq_start || !defined $seq_end);
 
                     if (!$target_seq) {
-                        warn "Target sequence out of alignment borders";
+                        warn "Target sequence out of alignment borders" if ($self->verbose);
                         ## $condition
                         ## $condition_regex
                         ## $target_seq
@@ -680,7 +716,6 @@ sub run_query {
 
                 if (@{$rule->{'Groups'}->{$grp}} == $pass_count) {
                     ## WE HAVE A PASS!
-                    $pass = 1;
 
 
                     $query_rules{$query_id}{$rule_id}{'aliAcc'} = $target_match->{'aliAcc'};
@@ -716,41 +751,11 @@ sub run_query {
             }
 ## END OF GROUP
 
-        # $query_rules{$query_id}{$rule_id} = $pass;
-
-    
-
         }
 
-    
     }
 
-
-
-
-    my $json_out = to_json( \%query_rules, { pretty => 1 } );
-
-
-
-    my $out;
-    if ($self->has_output_file) {
-        # my $has_out = $self->has_output_file;
-        # ### $has_out
-
-        # my $out_file = $self->output_file;
-        # ### $out_file
-
-        open ($out, '>', $self->output_file) or die "Failed top open " . $self->output_file . " file: $!\n";
-        select($out);
-    }
-
-    print $json_out;
-
-
-    if ($self->has_output_file) {
-        close($out) or die "Failed to close" . $self->output_file . " file: $!\n";
-        select STDOUT;
-    }
+    return \%query_rules;
 
 
 ## %query_rules
@@ -776,254 +781,6 @@ sub map_hmm_to_seq {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-## DEPRECATED CODE
-
-# sub get_rules {
-#     my ($rules_file) = @_;
-
-
-
-#     my %data;
-
-#     do {
-#         local $/ = "//\n";
-#         open (my $in, '<', $rules_file) or die "Failed top open $rules_file file: $!\n";
-#         while (my $block = <$in>) {
-#             my $rule_hash = _parse_rules($block);
-#             ## $rule_hash
-#             $data{$rule_hash->{'AC'}} = $rule_hash;
-#         }
-#         close($in) or die "Failed to close $rules_file\n";
-#     };
-
-# ## %data
-#     #return data structure
-#     return \%data;
-# }
-
-
-
-
-
-# sub align_template {
-#     my ($rules, $template_folder) = @_;
-# ## $rules
-#     RULE:
-#     foreach my $acc (keys %{$rules}) {
-#         ## $acc
-
-#         my $cur_rule = $rules->{$acc};
-# ## $cur_rule
-
-#         my $prot_id = $cur_rule->{'Feature'}->{'from'};
-#         ## $prot_id
-
-#         my $fasta_file = "${template_folder}/${prot_id}.fa";
-# ## $fasta_file
-#         open (my $in, '<', "$fasta_file") or die "Failed top open $fasta_file file: $!\n";
-
-
-#         my $prot_model = <$in>;
-#         $prot_model =~ s/.*\t//;
-#         $prot_model =~ s/\n//;
-#         ## $prot_model
-
-#         my $prot_seq = <$in>;
-#         $prot_seq =~ s/\n//;
-#         ## $prot_seq
-
-#         my $stockholm = `hmmalign data/sr_hmm/${prot_model}.hmm ${fasta_file}`;
-# ## $stockholm
-#         my $alignment_str;
-#         while ($stockholm =~ /\n${prot_id}\s+([^\n]*)/g) {
-#             $alignment_str .= $1;
-#         }
-#         ## $alignment_str
-
-
-#         my $alignment = align_map($alignment_str);
-#         ## @map;
-
-#         foreach my $grp (keys %{$cur_rule->{'Groups'}}) {
-#                 ## $grp
-
-#             for my $pos (0 .. $#{$cur_rule->{'Groups'}->{$grp}} ) {
-#                 ## $pos
-#                 my $both = 0;
-
-#                 if ($cur_rule->{'Groups'}->{$grp}->[$pos]->{'start'} eq 'Nter' || $cur_rule->{'Groups'}->{$grp}->[$pos]->{'end'} eq 'Cter') {
-#                     warn "rule $acc, group $grp, pos $pos: Start/End is Nter/Cter";
-#                     delete $rules->{$acc};
-#                     # undef $cur_rule;
-#                     next RULE;
-#                     # if (length ($cur_rule->{'Groups'}->{$grp}->[$pos]->{'condition'}) == 1) {
-#                     #     $cur_rule->{'Groups'}->{$grp}->[$pos]->{'start'} = $cur_rule->{'Groups'}->{$grp}->[$pos]->{'end'};
-#                     # } else {
-#                     #     die "Nter with range not supported. Fixme";
-#                     # }
-#                 }
-
-#                 if ($alignment->[$cur_rule->{'Groups'}->{$grp}->[$pos]->{'start'}] eq "-") {
-#                     warn $prot_model." ".$prot_id."/".$cur_rule->{'Groups'}->{$grp}->[$pos]->{'start'}." is non-match state.\n";
-#                     $both++;
-#                     ## second_if: $cur_rule->{'Groups'}->{$grp}->[$pos]
-#                 }
-#                 if ($alignment->[$cur_rule->{'Groups'}->{$grp}->[$pos]->{'end'}] eq "-") {
-#                     warn $prot_model." ".$prot_id."/".$cur_rule->{'Groups'}->{$grp}->[$pos]->{'end'}." is non-match state.\n";
-#                     $both++;
-#                     ## third_if: $cur_rule->{'Groups'}->{$grp}->[$pos]
-#                 }
-#                 #Some of the disulphide bridges lack on of the positions. However, the two current failing
-#                 #rules means that we are completely dependent on a length.    This is not ideal, but we
-#                 #can try.
-#                 if ($both == 2) {
-#                     warn "No anchor point for $prot_model ".$prot_id."/".$cur_rule->{'Groups'}->{$grp}->[$pos]->{'start'}."-".$cur_rule->{'Groups'}->{$grp}->[$pos]->{'end'}."\n";
-#                 }
-
-#                 $cur_rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $alignment->[$cur_rule->{'Groups'}->{$grp}->[$pos]->{'start'}];
-#                 $cur_rule->{'Groups'}->{$grp}->[$pos]->{hmmEnd} = $alignment->[$cur_rule->{'Groups'}->{$grp}->[$pos]->{'end'}];
-
-
-#                 ## $pos
-#                 ## $cur_rule
-
-#             }
-
-#         }
-
-#     }
-
-#     return $rules;
-# }
-
-
-
-
-
-# sub read_template_fasta {
-#     my ($fasta_file) = @_;
-
-#     my ($path) = $fasta_file =~ /(.+)\/[^\/+]/;
-
-#     my $data;
-
-#     do {
-#         local $/ = ">";
-#         open (my $in, '<', $fasta_file) or die "Failed top open $fasta_file file: $!\n";
-#         while (my $block = <$in>) {
-
-#             $block =~ s/\n?>?\z//;
-#             next if !$block;
-
-
-
-#             if ($block =~ /\A(\w+)\s+(\w+-\d+)\n/) {
-#                 my $prot_it = $1;
-#                 my $hmm_id = $2;
-
-#                 $data->{$prot_it}->{'hmm'} = $hmm_id;
-
-#                 $block =~ s/\A(\w+)\s+(\w+-\d+)\n//;
-#                 $block =~ s/\n//g;
-
-#                 $data->{$prot_it}->{'seq'} = $block;
-
-#                 open (my $out, '>', "${path}/${prot_it}.fa" ) or die "Failed top open ${prot_it}.fa file: $!\n";
-
-#                 print $out ">${prot_it}\n$data->{$prot_it}->{'seq'}\n";
-
-#                 close($out) or die "Failed to close ${prot_it}.fa\n";
-
-#                 $data->{$prot_it}->{'file'} = "${path}/${prot_it}.fa";
-
-#             } else {
-#                 die "ERROR: failed to parse fasta block: \"$block\"\n";
-#             }
-#             ## $block
-#             # my $stuff = _process_rules_block($block);
-#             ## $stuffs
-#         }
-#         close($in) or die "Failed to close $fasta_file\n";
-#     };
-
-#     #return data structure
-#     return $data;
-# }
-
-
-
-
-
-
-
-# sub run_search {
-#     my ($query_file, $hmm_folder) = @_;
-
-# ### $query_file
-# ### $hmm_folder
-
-
-#     my $out = 'result.out';
-
-#     my $cmd = "hmmscan --notextw -o $out ${hmm_folder}/sr_hmm.hmm $query_file";
-#     ### $cmd
-#     system($cmd) && die qq(Failed to run "$cmd");
-#     ### $out
-# # my $hmmRes = Bio::Pfam::HMM::HMMResultsIO->new;
-# # ### $hmmRes
-#     my $res_obj = Bio::Pfam::HMM::HMMResultsIO->new->parseMultiHMMER3($out);
-# ## $res_obj
-
-
-
-#     # print "Sequence acc\tSeq start\tSeq end\tRule acc\tFeature group\tTrigger\tModel\tTemplate\tTemplate start\tTemplate end\tTaxonomic scope\tFeature type\tFeature description\n";
-#     foreach my $query_match (@{$res_obj}) {
-# ## $query_match
-#         my $query_id = $query_match->{'seqName'};
-#         ## $query_id
-
-
-#         # loop over HMMs - i.e. Unirule profiles
-#         # my $rule_id = $query_match->{hmmName};
-#         # ### $rule_id
-#         # $rule_id =~ s{\.}{\-}; # FIXME - check what format we are using for HMMs - may not need this
-
-
-#         foreach my $target_match (@{$query_match->{'units'}}) {
-#             ## $target_match
-#             # loop over alignments
-#             my $rule_id = $target_match->{'name'};
-
-#             ## $rule_id
-
-#             my $tname = $target_match->{name}; # the sequence ID/accession
-#             my $hmm_seq = $target_match->{hmmalign}{hmm};
-#             my $target_seq = $target_match->{hmmalign}{seq};
-#             my $hmm_from = $target_match->{hmmFrom};
-#             my $seq_from = $target_match->{seqFrom};
-#             # my $map = map_hmm_to_seq($hmm_from, $hmm_seq, $target_seq);
-#             # while (my ($group_id, $group_rules) = each %{$rules->{$rule_id}}) {
-#                 # Loop over the groups in the rule - check and print
-#                 # print_group_matches($rule_id, $group_id, $tname, $target_seq, $seq_from, $map, $group_rules, $fh, 0);
-#             # }
-#         }
-#     }
-
-
-
-
-
-# }
 
 
 __PACKAGE__->meta->make_immutable;
