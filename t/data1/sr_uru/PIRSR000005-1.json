@@ -1,0 +1,58 @@
+{
+   "Size" : "unlimited",
+   "DC" : "Domain",
+   "Feature" : {
+      "model" : "SRHMM000005-1",
+      "from" : "Q52369"
+   },
+   "Scope" : [
+      "Bacteria"
+   ],
+   "TR" : "PIRSF; PIRSF000005; -; 1",
+   "Groups" : {
+      "1" : [
+         {
+            "hmmEnd" : 43,
+            "label" : "BINDING",
+            "group" : "1",
+            "end" : 34,
+            "hmmStart" : 43,
+            "desc" : "Heme 1 (covalent).",
+            "start" : 34,
+            "condition" : "C"
+         },
+         {
+            "hmmEnd" : 46,
+            "label" : "BINDING",
+            "hmmStart" : 46,
+            "desc" : "Heme 1 (covalent).",
+            "end" : 37,
+            "group" : "1",
+            "condition" : "C",
+            "start" : 37
+         },
+         {
+            "hmmEnd" : 144,
+            "label" : "BINDING",
+            "end" : 139,
+            "group" : "1",
+            "desc" : "Heme 2 (covalent).",
+            "hmmStart" : 144,
+            "condition" : "C",
+            "start" : 139
+         },
+         {
+            "group" : "1",
+            "end" : 142,
+            "hmmStart" : 147,
+            "desc" : "Heme 2 (covalent).",
+            "start" : 142,
+            "condition" : "C",
+            "hmmEnd" : 147,
+            "label" : "BINDING"
+         }
+      ]
+   },
+   "Related" : "None",
+   "AC" : "PIRSR000005-1"
+}
