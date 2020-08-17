@@ -7,8 +7,7 @@ use Pod::Usage;
 
 use Smart::Comments;
 
-
-use File::Copy;
+use JSON;
 use FindBin qw($Bin);
 use lib "$Bin";
 
@@ -22,27 +21,27 @@ use PIRSR;
 
 use Smart::Comments;
 
-my $rules_file;
-my $fasta_file;
-my $target_file;
-
 
 my $data_folder;
 
 my $hmm_folder;
 my $template_folder;
 my $rule_folder;
+my $preprocess = 0;
 
-
+# my $hmmer_path = '';
+# my $cpus = 1;
 
 my $query_file;
+my $out_file;
 
+my $verbose = 0;
 
 GetOptions(
   'help'     => sub { pod2usage( -verbose => 1 ) },
   'man'      => sub { pod2usage( -verbose => 2 ) },
 
-
+  'verbose'  => \$verbose,
 
   'data=s'   => \$data_folder,
 
@@ -50,96 +49,141 @@ GetOptions(
   'templates=s' => \$template_folder,
   'rules=s'  => \$rule_folder,
 
+  'preprocess'  => \$preprocess,
 
 
-  'rules=s'  => \$rules_file,
-  'fasta=s'  => \$fasta_file,
-
+  # 'hmmer_path=s' => \$hmmer_path,
+  # 'cpus=i'   => \$cpus,
 
   'query=s'  => \$query_file,
 
+  'out=s'    => \$out_file,
 
 
-  'target=s' => \$target_file,
+
 
 ) or pod2usage(2);
 
-## $rules_file
 
-$data_folder =~ s/\/$//;
-### $data_folder
+# set the data paths
+my $data_paths = PIRSR::prepare_data_paths($data_folder, $hmm_folder, $template_folder, $rule_folder);
 
 # set the default hmm_folder
-if (!$hmm_folder) {
-    $hmm_folder = "${data_folder}/sr_hmm";
+if (!$data_paths) {
+    print "\n *** Data folders have not been set properly ***\n\n";
+    pod2usage(2);
+    exit;
 }
 
-# set the default template_folder
-if (!$template_folder) {
-    $template_folder = "${data_folder}/sr_tp";
-}
-
-# set the default rule_folder and move the uru file there
-if (!$rule_folder) {
-    $rule_folder = "${data_folder}/sr_uru";
-    if (!-d $rule_folder) {
-        mkdir($rule_folder);
-    }
-
-    if (!-e "${rule_folder}/PIRSR.uru") {
-        move("${data_folder}/PIRSR.uru", "${rule_folder}/PIRSR.uru");
-    }
-}
-
-
+# Start PIRSR
 my $pirsr = PIRSR->new(
-    template_folder => $template_folder,
-    hmm_folder      => $hmm_folder,
-    rule_folder     => $rule_folder,
+    %{$data_paths},
+    # hmmer_path      => $hmmer_path,
+    # cpus            => $cpus,
+    verbose         => $verbose
 );
 
-### $pirsr
-
-my $bla = $pirsr->process_data();
-### $bla
-
-# my $template_result = $pirsr->process_template_folder();
-# # $template_result
-
-# my $hmm_result = $pirsr->process_hmm_folder();
-# # $hmm_result
+if ($verbose) {
+    print "PIRSR initiated...\n";
+}
 
 
-# my $rule_result = $pirsr->process_rule_folder();
-# ## $rule_result
+# Do preprocessing if required
+if ($preprocess) {
+    print "Preprocessing data...\n" if $verbose;
+    my $process_result = $pirsr->process_data();
+
+    if ($process_result) {
+        print "Preprocessing completed successfully...\n" if $verbose;
+    }
+}
+
+
+# Process query sequences if required
+if ($query_file) {
+    print "Querying sequences in '$query_file'...\n" if $verbose;
+    my $search_output = $pirsr->run_query($query_file);
+    ## $search_output
+
+    my $json_out = to_json( $search_output, { pretty => 1 } );
+    my $out_fh;
+
+    print "Outputting results " if $verbose;
+    if ($out_file) {
+        print "to $out_file...\n" if $verbose;
+        open ($out_fh, '>', $out_file) or die "Failed top open $out_file file: $!\n";
+        select($out_fh);
+    } else{
+        print "to STDOUT...\n" if $verbose;
+    }
+
+    # Output the results data
+    print $json_out;
+
+    if ($out_file) {
+        close($out_fh) or die "Failed to close $out_file file: $!\n";
+        select STDOUT;
+    }
+}
+
+
+print "Done...\n" if $verbose;
+
+
+
+
+1;
+
+__END__
+
+
+
+=head1 NAME
+
+pirsr.pl - PIRSR scan program
+
+=head1 SYNOPSIS
+
+  pirsr.pl -data SR-InterPro-2020_08/data/ [OPTIONS]
+
+  -help                   : Prints brief help message.
+  -man                    : Prints full documentation.
+  -verbose                : Report warnings to STDOUT, default true.
+  -data <folder>          : Folder with PIRSF data to use, required.
+    -hmms <folder>        : Folder with PIRSF hmm data to use, overrides data.
+    -templates <folder>   : Folder with PIRSF template data to use, overrides data.
+    -rules <folder>       : Folder with PIRSF rule data to use, overrides data.
+  -preprocess             : If set will do the data processing and persist it, default assumes data has been preprocessed previously.
+  -query <file>           : FASTA file with sequences to analyse with PIRSR.
+  -out <file>             : File name to write the JSON results from query data, default STDOUT.
+  -verbose                : Report warnings to STDOUT, default true.
+  -help                   : Prints brief help message.
+  -man                    : Prints full documentation.
+
+  UNIMPLEMENTED
+  -hmmer_path <folder>    : Path to HMMER binaries, default system wide install.
+  -cpus <#>               : Number of cpus to using for hmmscan, default 1.
+
+=head1 DESCRIPTION
+
+PIRSR processes PIR Site Rules data and reports matches for the query fasta sequence file.
+
+PIR Site Rule is a series of HMMs and rules to match sites, manually created based on template sequence.
+For a sequence to hit a PIRSR it needs to hit a HMM and conform to the crafted residue site rules for that HMM.
+The runner script is B<pirsr.pl> and it uses the B<PIRSR.pm> package.
+To get help you can run C<perl pirsr.pl -man>.
+
+Protein Information Resource provides regular data updates for PIRSR. Those can be found at L<https://proteininformationresource.org/ura/pirsr/files_for_ebi/srhmm_for_interpro/>.
+Data comes in a tarball with the name SR-InterPro-YYYY-MM.tar.gz and updates are released roughly monthly.
+Inside the tarball there is a data/ folder, this is the folder that will be required for processing and building of the PIRSR system.
 
 
 
 
 
-my $search = $pirsr->run_query($query_file);
-### $search
 
+=head1 DEPENDENCIES
 
+hmmer
 
-
-
-# my $fasta = PIRSR::read_template_fasta($fasta_file);
-# ## $fasta
-
-
-# my $rules = PIRSR::get_rules($rules_file);
-# ## $rules
-
-
-# my $align = PIRSR::align_template($rules, $template_folder);
-# ### $align
-
-
-# ## $result
-
-
-
-
-# my $search = PIRSR::run_search($query_file, $hmm_folder);
-# ### $search
+=cut
