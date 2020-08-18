@@ -11,15 +11,7 @@ use JSON;
 use FindBin qw($Bin);
 use lib "$Bin";
 
-
 use PIRSR;
-
-
-
-
-
-
-use Smart::Comments;
 
 
 my $data_folder;
@@ -29,8 +21,9 @@ my $template_folder;
 my $rule_folder;
 my $preprocess = 0;
 
-# my $hmmer_path = '';
-# my $cpus = 1;
+my $hmmscan = 'hmmscan';
+my $cpus = 1;
+my $hmmalign = 'hmmalign';
 
 my $query_file;
 my $out_file;
@@ -38,29 +31,20 @@ my $out_file;
 my $verbose = 0;
 
 GetOptions(
-  'help'     => sub { pod2usage( -verbose => 1 ) },
-  'man'      => sub { pod2usage( -verbose => 2 ) },
 
-  'verbose'  => \$verbose,
-
-  'data=s'   => \$data_folder,
-
-  'hmms=s'   => \$hmm_folder,
+  'help'        => sub { pod2usage( -verbose => 1 ) },
+  'man'         => sub { pod2usage( -verbose => 2 ) },
+  'verbose'     => \$verbose,
+  'data=s'      => \$data_folder,
+  'hmms=s'      => \$hmm_folder,
   'templates=s' => \$template_folder,
-  'rules=s'  => \$rule_folder,
-
+  'rules=s'     => \$rule_folder,
   'preprocess'  => \$preprocess,
-
-
-  # 'hmmer_path=s' => \$hmmer_path,
-  # 'cpus=i'   => \$cpus,
-
-  'query=s'  => \$query_file,
-
-  'out=s'    => \$out_file,
-
-
-
+  'hmmalign=s'  => \$hmmalign,
+  'hmmscan=s'   => \$hmmscan,
+  'cpus=i'      => \$cpus,
+  'query=s'     => \$query_file,
+  'out=s'       => \$out_file,
 
 ) or pod2usage(2);
 
@@ -78,10 +62,13 @@ if (!$data_paths) {
 # Start PIRSR
 my $pirsr = PIRSR->new(
     %{$data_paths},
-    # hmmer_path      => $hmmer_path,
-    # cpus            => $cpus,
-    verbose         => $verbose
+    hmmalign => $hmmalign,
+    hmmscan  => $hmmscan,
+    cpus     => $cpus,
+    verbose  => $verbose
 );
+
+### $pirsr
 
 if ($verbose) {
     print "PIRSR initiated...\n";
@@ -103,8 +90,7 @@ if ($preprocess) {
 if ($query_file) {
     print "Querying sequences in '$query_file'...\n" if $verbose;
     my $search_output = $pirsr->run_query($query_file);
-    ## $search_output
-
+### $search_output
     my $json_out = to_json( $search_output, { pretty => 1 } );
     my $out_fh;
 
@@ -161,7 +147,8 @@ pirsr.pl - PIRSR scan program
   -man                    : Prints full documentation.
 
   UNIMPLEMENTED
-  -hmmer_path <folder>    : Path to HMMER binaries, default system wide install.
+  -hmmalign               : Path to hmmalign binaries, default system wide install.
+  -hmmscan                : Path to hmmscan binaries, default system wide install.
   -cpus <#>               : Number of cpus to using for hmmscan, default 1.
 
 =head1 DESCRIPTION
