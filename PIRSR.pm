@@ -41,17 +41,23 @@ has 'verbose' => (
     default  => 0
 );
 
-# has 'hmmer_path' => (
-#     is       => 'rw',
-#     isa      => 'Str',
-#     default  => ''
-# );
+has 'hmmalign' => (
+    is       => 'rw',
+    isa      => 'Str',
+    default  => 'hmmalign'
+);
 
-# has 'cpus' => (
-#     is       => 'rw',
-#     isa      => 'Num',
-#     default  => 1
-# );
+has 'hmmscan' => (
+    is       => 'rw',
+    isa      => 'Str',
+    default  => 'hmmscan'
+);
+
+has 'cpus' => (
+    is       => 'rw',
+    isa      => 'Num',
+    default  => 1
+);
 
 
 
@@ -338,7 +344,7 @@ sub align_template {
         $prot_seq = $2;
     }
 
-    my $stockholm = `hmmalign data/sr_hmm/${prot_model}.hmm ${fasta_file}`;
+    my $stockholm = `$self->{hmmalign} data/sr_hmm/${prot_model}.hmm ${fasta_file}`;
 
     my $alignment_str;
     while ($stockholm =~ /\n${prot_id}\s+([^\n]*)/g) {
@@ -464,7 +470,7 @@ sub run_query {
 
     my $hmm_library = $self->{hmm_folder} . '/sr_hmm.hmm';
 
-    my $cmd = "hmmscan --notextw -o $out $hmm_library $query_file";
+    my $cmd = "$self->{hmmscan} --cpu $self->{cpus} --notextw -o $out $hmm_library $query_file";
 
     system($cmd) && die qq(Failed to run "$cmd");
 
