@@ -68,8 +68,6 @@ my $pirsr = PIRSR->new(
     verbose  => $verbose
 );
 
-### $pirsr
-
 if ($verbose) {
     print "PIRSR initiated...\n";
 }
@@ -90,7 +88,7 @@ if ($preprocess) {
 if ($query_file) {
     print "Querying sequences in '$query_file'...\n" if $verbose;
     my $search_output = $pirsr->run_query($query_file);
-### $search_output
+
     my $json_out = to_json( $search_output, { pretty => 1 } );
     my $out_fh;
 
@@ -136,20 +134,18 @@ pirsr.pl - PIRSR scan program
   -man                    : Prints full documentation.
   -verbose                : Report warnings to STDOUT, default true.
   -data <folder>          : Folder with PIRSF data to use, required.
-    -hmms <folder>        : Folder with PIRSF hmm data to use, overrides data.
-    -templates <folder>   : Folder with PIRSF template data to use, overrides data.
-    -rules <folder>       : Folder with PIRSF rule data to use, overrides data.
+  -hmms <folder>          : Folder with PIRSF hmm data to use, overrides data.
+  -templates <folder>     : Folder with PIRSF template data to use, overrides data.
+  -rules <folder>         : Folder with PIRSF rule data to use, overrides data.
   -preprocess             : If set will do the data processing and persist it, default assumes data has been preprocessed previously.
   -query <file>           : FASTA file with sequences to analyse with PIRSR.
   -out <file>             : File name to write the JSON results from query data, default STDOUT.
-  -verbose                : Report warnings to STDOUT, default true.
-  -help                   : Prints brief help message.
-  -man                    : Prints full documentation.
-
-  UNIMPLEMENTED
   -hmmalign               : Path to hmmalign binaries, default system wide install.
   -hmmscan                : Path to hmmscan binaries, default system wide install.
   -cpus <#>               : Number of cpus to using for hmmscan, default 1.
+  -verbose                : Report warnings to STDOUT, default true.
+  -help                   : Prints brief help message.
+  -man                    : Prints full documentation.
 
 =head1 DESCRIPTION
 
