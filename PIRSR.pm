@@ -522,7 +522,7 @@ sub run_query {
                     $target_seq = substr($query_seq, $seq_start, $seq_end - $seq_start + 1) unless (!defined $seq_start || !defined $seq_end);
 
                     if (!$target_seq) {
-                        warn "Target sequence out of alignment borders" if ($self->verbose);
+                        warn "Target sequence out of alignment borders for query ${query_id} on hit ${tname}\n" if ($self->verbose);
                     }
 
                     $pass_count += ($target_seq =~ /${condition_regex}/);
