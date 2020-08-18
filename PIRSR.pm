@@ -182,7 +182,7 @@ sub process_hmm_folder {
         # remove file type
         $hmm_name =~ s/\.hmm//;
         # replace with hmm/rule name
-        $hmm =~ s/NAME\s+.*?\n/NAME  ${hmm_name}\n/;
+        $hmm =~ s/NAME\s+.*?\n/NAME  ${hmm_name}\ACC   ${hmm_name}\n/;
 
         # print it out to library file
         print $hmm_out $hmm;
