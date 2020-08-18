@@ -32,7 +32,7 @@ my $data1_expected = {
   'NNN-SEQ' => {},
   Q52369 => {
               'PIRSR000005-1' => {
-                                   Rules => [
+                                   RuleSites => [
                                               {
                                                 condition => 'C',
                                                 desc => 'Heme 1 (covalent).',

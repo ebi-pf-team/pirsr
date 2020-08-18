@@ -1,58 +1,58 @@
 {
    "AC" : "PIRSR000005-1",
-   "TR" : "PIRSF; PIRSF000005; -; 1",
+   "DC" : "Domain",
    "Size" : "unlimited",
    "Related" : "None",
-   "Feature" : {
-      "model" : "SRHMM000005-1",
-      "from" : "Q52369"
+   "Groups" : {
+      "1" : [
+         {
+            "label" : "BINDING",
+            "group" : "1",
+            "hmmStart" : 43,
+            "end" : 34,
+            "desc" : "Heme 1 (covalent).",
+            "start" : 34,
+            "condition" : "C",
+            "hmmEnd" : 43
+         },
+         {
+            "hmmEnd" : 46,
+            "condition" : "C",
+            "hmmStart" : 46,
+            "start" : 37,
+            "desc" : "Heme 1 (covalent).",
+            "end" : 37,
+            "label" : "BINDING",
+            "group" : "1"
+         },
+         {
+            "condition" : "C",
+            "hmmEnd" : 144,
+            "label" : "BINDING",
+            "group" : "1",
+            "hmmStart" : 144,
+            "desc" : "Heme 2 (covalent).",
+            "start" : 139,
+            "end" : 139
+         },
+         {
+            "hmmStart" : 147,
+            "desc" : "Heme 2 (covalent).",
+            "end" : 142,
+            "start" : 142,
+            "label" : "BINDING",
+            "group" : "1",
+            "hmmEnd" : 147,
+            "condition" : "C"
+         }
+      ]
    },
    "Scope" : [
       "Bacteria"
    ],
-   "Groups" : {
-      "1" : [
-         {
-            "desc" : "Heme 1 (covalent).",
-            "condition" : "C",
-            "label" : "BINDING",
-            "hmmEnd" : 43,
-            "end" : 34,
-            "start" : 34,
-            "group" : "1",
-            "hmmStart" : 43
-         },
-         {
-            "desc" : "Heme 1 (covalent).",
-            "label" : "BINDING",
-            "condition" : "C",
-            "end" : 37,
-            "hmmEnd" : 46,
-            "hmmStart" : 46,
-            "group" : "1",
-            "start" : 37
-         },
-         {
-            "hmmEnd" : 144,
-            "end" : 139,
-            "start" : 139,
-            "group" : "1",
-            "hmmStart" : 144,
-            "desc" : "Heme 2 (covalent).",
-            "condition" : "C",
-            "label" : "BINDING"
-         },
-         {
-            "condition" : "C",
-            "label" : "BINDING",
-            "desc" : "Heme 2 (covalent).",
-            "start" : 142,
-            "group" : "1",
-            "hmmStart" : 147,
-            "hmmEnd" : 147,
-            "end" : 142
-         }
-      ]
+   "Feature" : {
+      "from" : "Q52369",
+      "model" : "SRHMM000005-1"
    },
-   "DC" : "Domain"
+   "TR" : "PIRSF; PIRSF000005; -; 1"
 }
