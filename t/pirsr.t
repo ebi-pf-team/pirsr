@@ -10,21 +10,15 @@ use Smart::Comments;
 use_ok('PIRSR');
 
 
-my $data1_paths = PIRSR::prepare_data_paths("$Bin/data1/");
+my $data1_path = "$Bin/data1/";
 
-is_deeply($data1_paths, {
-    hmm_folder => "$Bin/data1/sr_hmm",
-    rule_folder => "$Bin/data1/sr_uru",
-    template_folder => "$Bin/data1/sr_tp"
-}, "data1 paths set correctly");
-
-my $data1_pirsr = PIRSR->new($data1_paths);
+my $data1_pirsr = PIRSR->new(data_folder => $data1_path);
 
 ok($data1_pirsr, 'data1 PIRSR initiated');
 
-ok($data1_pirsr->process_template_folder, 'data1 PIRSR template folder processing successful');
-ok($data1_pirsr->process_hmm_folder, 'data1 PIRSR hmm folder processing successful');
-ok($data1_pirsr->process_rule_folder, 'data1 PIRSR rule folder processing successful');
+ok($data1_pirsr->process_templates, 'data1 PIRSR template folder processing successful');
+ok($data1_pirsr->process_hmms, 'data1 PIRSR hmm folder processing successful');
+ok($data1_pirsr->process_rules, 'data1 PIRSR rule folder processing successful');
 
 ok($data1_pirsr->process_data, 'data1 PIRSR data processed successful');
 
