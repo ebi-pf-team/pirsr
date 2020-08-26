@@ -16,9 +16,6 @@ use PIRSR;
 
 my $data_folder;
 
-my $hmm_folder;
-my $template_folder;
-my $rule_folder;
 my $preprocess = 0;
 
 my $hmmscan = 'hmmscan';
@@ -36,9 +33,6 @@ GetOptions(
   'man'         => sub { pod2usage( -verbose => 2 ) },
   'verbose'     => \$verbose,
   'data=s'      => \$data_folder,
-  'hmms=s'      => \$hmm_folder,
-  'templates=s' => \$template_folder,
-  'rules=s'     => \$rule_folder,
   'preprocess'  => \$preprocess,
   'hmmalign=s'  => \$hmmalign,
   'hmmscan=s'   => \$hmmscan,
@@ -49,23 +43,20 @@ GetOptions(
 ) or pod2usage(2);
 
 
-# set the data paths
-my $data_paths = PIRSR::prepare_data_paths($data_folder, $hmm_folder, $template_folder, $rule_folder);
-
 # set the default hmm_folder
-if (!$data_paths) {
-    print "\n *** Data folders have not been set properly ***\n\n";
+if (!$data_folder) {
+    print "\n *** data path is mandatory ***\n\n";
     pod2usage(2);
     exit;
 }
 
 # Start PIRSR
 my $pirsr = PIRSR->new(
-    %{$data_paths},
-    hmmalign => $hmmalign,
-    hmmscan  => $hmmscan,
-    cpus     => $cpus,
-    verbose  => $verbose
+    data_folder => $data_folder,
+    hmmalign    => $hmmalign,
+    hmmscan     => $hmmscan,
+    cpus        => $cpus,
+    verbose     => $verbose
 );
 
 if ($verbose) {
@@ -80,6 +71,9 @@ if ($preprocess) {
 
     if ($process_result) {
         print "Preprocessing completed successfully...\n" if $verbose;
+    } else {
+        print "Preprocessing failed...\n" if $verbose;
+        exit;
     }
 }
 
@@ -133,10 +127,7 @@ pirsr.pl - PIRSR scan program
   -help                   : Prints brief help message.
   -man                    : Prints full documentation.
   -verbose                : Report warnings to STDOUT, default true.
-  -data <folder>          : Folder with PIRSF data to use, required.
-  -hmms <folder>          : Folder with PIRSF hmm data to use, overrides data.
-  -templates <folder>     : Folder with PIRSF template data to use, overrides data.
-  -rules <folder>         : Folder with PIRSF rule data to use, overrides data.
+  -data <folder>          : Folder with PIRSF data to use or preprocess, required.
   -preprocess             : If set will do the data processing and persist it, default assumes data has been preprocessed previously.
   -query <file>           : FASTA file with sequences to analyse with PIRSR.
   -out <file>             : File name to write the JSON results from query data, default STDOUT.

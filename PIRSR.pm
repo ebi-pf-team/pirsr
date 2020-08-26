@@ -17,23 +17,23 @@ use Smart::Comments;
 
 
 
-has 'template_folder' => (
+has 'data_folder' => (
     is       => 'rw',
     isa      => 'Str',
     required => 1
 );
 
-has 'hmm_folder' => (
-    is       => 'rw',
-    isa      => 'Str',
-    required => 1
-);
+# has 'hmm_folder' => (
+#     is       => 'rw',
+#     isa      => 'Str',
+#     required => 1
+# );
 
-has 'rule_folder' => (
-    is       => 'rw',
-    isa      => 'Str',
-    required => 1
-);
+# has 'rule_folder' => (
+#     is       => 'rw',
+#     isa      => 'Str',
+#     required => 1
+# );
 
 has 'verbose' => (
     is       => 'rw',
@@ -62,40 +62,40 @@ has 'cpus' => (
 
 
 
-# returns array of seq->hmm positions for a given alignment string
-sub prepare_data_paths {
-    my ($data_folder, $hmm_folder, $template_folder, $rule_folder) = @_;
+# # returns array of seq->hmm positions for a given alignment string
+# sub prepare_data_paths {
+#     my ($data_folder, $hmm_folder, $template_folder, $rule_folder) = @_;
 
-    $data_folder =~ s/\/$//;
+#     $data_folder =~ s/\/$//;
 
-    # set the default hmm_folder
-    if (!$hmm_folder && $data_folder) {
-        $hmm_folder = "${data_folder}/sr_hmm";
-    }
+#     # set the default hmm_folder
+#     if (!$hmm_folder && $data_folder) {
+#         $hmm_folder = "${data_folder}/sr_hmm";
+#     }
 
-    # set the default template_folder
-    if (!$template_folder && $data_folder) {
-        $template_folder = "${data_folder}/sr_tp";
-    }
+#     # set the default template_folder
+#     if (!$template_folder && $data_folder) {
+#         $template_folder = "${data_folder}/sr_tp";
+#     }
 
-    # set the default rule_folder and move the uru file there
-    if (!$rule_folder && $data_folder) {
-        $rule_folder = "${data_folder}/sr_uru";
-        if (!-d $rule_folder) {
-            mkdir($rule_folder);
-        }
+#     # set the default rule_folder and move the uru file there
+#     if (!$rule_folder && $data_folder) {
+#         $rule_folder = "${data_folder}/sr_uru";
+#         if (!-d $rule_folder) {
+#             mkdir($rule_folder);
+#         }
 
-        if (!-e "${rule_folder}/PIRSR.uru") {
-            move("${data_folder}/PIRSR.uru", "${rule_folder}/PIRSR.uru");
-        }
-    }
+#         if (!-e "${rule_folder}/PIRSR.uru") {
+#             move("${data_folder}/PIRSR.uru", "${rule_folder}/PIRSR.uru");
+#         }
+#     }
 
-    return {
-        template_folder => $template_folder,
-        hmm_folder      => $hmm_folder,
-        rule_folder     => $rule_folder,
-    }
-}
+#     return {
+#         template_folder => $template_folder,
+#         hmm_folder      => $hmm_folder,
+#         rule_folder     => $rule_folder,
+#     }
+# }
 
 
 
@@ -104,9 +104,45 @@ sub prepare_data_paths {
 sub process_data {
     my ($self) = @_;
 
-    my $template_ok = $self->process_template_folder();
-    my $hmm_ok = $self->process_hmm_folder();
-    my $rule_ok = $self->process_rule_folder();
+    my $data_folder = $self->{data_folder};
+#     $data_folder =~ s/\/$//;
+# ### $data_folder
+
+    # check provided data folder exists
+    if (! -d $data_folder) {
+        warn ("Could not find data folder '$data_folder'\n")  if ($self->verbose);
+        return 0;
+    }
+
+
+    # check the hmm_folder
+    if (! -d "${data_folder}/sr_hmm") {
+        warn ("Could not find hmm data folder '${data_folder}/sr_hmm'\n")  if ($self->verbose);
+        return 0;
+    }
+
+    # check the templates file
+    if (! -e "${data_folder}/sr_tp/sr_tp.seq") {
+        warn ("Could not find template data file '${data_folder}/sr_tp/sr_tp.seq'\n")  if ($self->verbose);
+        return 0;
+    }
+
+    # check the rules file
+    if (-e "${data_folder}/PIRSR.uru") {
+        if (!-d "${data_folder}/sr_uru") {
+            mkdir("${data_folder}/sr_uru");
+        }
+        move("${data_folder}/PIRSR.uru", "${data_folder}/sr_uru/PIRSR.uru")
+    } else {
+        if (! -e "${data_folder}/sr_uru/PIRSR.uru") {
+            warn ("Could not find rules data file '${data_folder}/PIRSR.uru or ${data_folder}/sr_uru/PIRSR.uru'\n")  if ($self->verbose);
+            return 0;
+        }
+    }
+
+    my $template_ok = $self->process_templates();
+    my $hmm_ok = $self->process_hmms();
+    my $rule_ok = $self->process_rules();
 
     if ($template_ok && $hmm_ok && $rule_ok) {
         return 1;
@@ -119,10 +155,10 @@ sub process_data {
 
 
 
-sub process_template_folder {
+sub process_templates {
     my ($self) = @_;
 
-    my $template_folder = $self->template_folder;
+    my $template_folder = $self->{data_folder} . '/sr_tp';
 
     # parse the sr_tp.seq a seq block at a time
     do {
@@ -167,12 +203,12 @@ sub process_template_folder {
 }
 
 
-sub process_hmm_folder {
+sub process_hmms {
     my ($self) = @_;
 
-    my $hmm_folder = $self->hmm_folder;
+    my $hmm_folder = $self->{data_folder} . '/sr_hmm';
 
-    open(my $hmm_out, '>', "$hmm_folder/sr_hmm.hmm") or die "Can't open '$hmm_folder/sr_hmm.hmm': $!\n";
+    open(my $hmm_out, '>', "$self->{data_folder}/sr_hmm_all") or die "Can't open '$hmm_folder/sr_hmm_all: $!\n";
 
     foreach my $hmm_file ( glob("$hmm_folder/PIRSR*.hmm") ) {
 
@@ -187,7 +223,7 @@ sub process_hmm_folder {
         $hmm_name =~ s/.*\///;
         # remove file type
         $hmm_name =~ s/\.hmm//;
-        # replace with hmm/rule name
+        # replace with hmm/rule namehmm_folder
         $hmm =~ s/NAME\s+.*?\n/NAME  ${hmm_name}\nACC   ${hmm_name}\n/;
 
         # print it out to library file
@@ -195,16 +231,16 @@ sub process_hmm_folder {
 
     }
 
-    close($hmm_out) or die "Can't close '$hmm_folder/sr_hmm.hmm' after writing: $!\n";
+    close($hmm_out) or die "Can't close '$self->{data_folder}/sr_hmm_all' after writing: $!\n";
 
     # create auxfiles
-    my $cmd = "hmmpress ${hmm_folder}/sr_hmm.hmm";
+    my $cmd = "hmmpress $self->{data_folder}/sr_hmm_all";
 
     foreach my $ext (qw(h3p h3m h3f h3i)) {
-        if (!-e "${hmm_folder}/sr_hmm.hmm.${ext}") {
+        if (!-e "$self->{data_folder}/sr_hmm_all.${ext}") {
             # Looks like the hmm database is not pressed
-            warn "Running hmmpress on ${hmm_folder}/sr_hmm.hmm\n" if ($self->verbose);
-            system("hmmpress ${hmm_folder}/sr_hmm.hmm") and die "Could not run hmmpress: $!\n";
+            warn "Running hmmpress on $self->{data_folder}/sr_hmm_all\n" if ($self->verbose);
+            system("hmmpress $self->{data_folder}/sr_hmm_all") and die "Could not run hmmpress: $!\n";
             last;
         }
     }
@@ -213,10 +249,12 @@ sub process_hmm_folder {
 }
 
 
-sub process_rule_folder {
+sub process_rules {
     my ($self) = @_;
 
-    my $rule_folder = $self->rule_folder;
+    my $rule_folder = $self->{data_folder} . '/sr_uru';
+
+    my $rules = {};
 
     do {
         local $/ = "//\n";
@@ -226,17 +264,27 @@ sub process_rule_folder {
 
             $rule_hash = $self->align_template($rule_hash);
 
-            my $rule_acc = $rule_hash->{'AC'};
+            # my $rule_acc = $rule_hash->{'AC'};
 
-            open (my $uru_out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed to open ${rule_acc}.json file: $!\n";
+            $rules->{$rule_hash->{'AC'}} = $rule_hash;
 
-            my $json_uru = to_json( $rule_hash, { pretty => 1 } );
-            print $uru_out $json_uru;
 
-            close($uru_out) or die "Failed to close ${rule_acc}.json\n";
+            # open (my $uru_out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed to open ${rule_acc}.json file: $!\n";
+
+            # my $json_uru = to_json( $rule_hash, { pretty => 1 } );
+            # print $uru_out $json_uru;
+
+            # close($uru_out) or die "Failed to close ${rule_acc}.json\n";
         }
         close($uru_in) or die "Failed to close ${rule_folder}/PIRSR.uru: $!\n";
     };
+
+    open (my $uru_out, '>', "$self->{data_folder}/sr_uru.json" ) or die "Failed to open $self->{data_folder}/sr_uru.json file: $!\n";
+
+    my $json_uru = to_json( $rules, { pretty => 1 } );
+    print $uru_out $json_uru;
+
+    close($uru_out) or die "Failed to close $self->{data_folder}/sr_uru.json\n";
 
     return 1;
 }
@@ -331,7 +379,7 @@ sub align_template {
 
     my $prot_id = $rule->{'Feature'}->{'from'};
 
-    my $fasta_file = "$self->{template_folder}/${prot_id}.fa";
+    my $fasta_file = "$self->{data_folder}/sr_tp/${prot_id}.fa";
 
     open (my $in, '<', "$fasta_file") or die "Failed top open $fasta_file file: $!\n";
 
@@ -344,7 +392,7 @@ sub align_template {
         $prot_seq = $2;
     }
 
-    my $stockholm = `$self->{hmmalign} data/sr_hmm/${prot_model}.hmm ${fasta_file}`;
+    my $stockholm = `$self->{hmmalign} $self->{data_folder}/sr_hmm/${prot_model}.hmm ${fasta_file}`;
 
     my $alignment_str;
     while ($stockholm =~ /\n${prot_id}\s+([^\n]*)/g) {
@@ -468,7 +516,17 @@ sub run_query {
         UNLINK => 1
     );
 
-    my $hmm_library = $self->{hmm_folder} . '/sr_hmm.hmm';
+    my $hmm_library = $self->{data_folder} . '/sr_hmm_all';
+
+
+    open(my $in, '<', "$self->{data_folder}/sr_uru.json") or die "Failed to open $self->{data_folder}/sr_uru.json file: $!\n";
+
+    my $json_string = do { local $/; <$in> };
+
+    close($in) or die "Failed to close $self->{data_folder}/sr_uru.json: $!\n";
+
+    my $rule_library = from_json($json_string);
+
 
     my $cmd = "$self->{hmmscan} --cpu $self->{cpus} --notextw -o $out $hmm_library $query_file";
 
@@ -490,12 +548,7 @@ sub run_query {
                 next;
             };
 
-            open(my $in, '<', "$self->{rule_folder}/${rule_id}.json") or die "Failed to open $self->{rule_folder}/${rule_id}.json file: $!\n";
-            my $json_string = do { local $/; <$in> };
-
-            close($in) or die "Failed to close /${rule_id}.json: $!\n";
-
-            my $rule = from_json($json_string);
+            my $rule = $rule_library->{$rule_id};
 
             my $tname = $target_match->{name}; # the sequence ID/accession
             my $hmm_seq = $target_match->{hmmalign}{hmm};
