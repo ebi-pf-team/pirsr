@@ -56,5 +56,45 @@
             }
          ]
       }
+   },
+   "PIRSR000025-2" : {
+      "DC" : "Domain",
+      "Scope" : [
+         "Bacteria"
+      ],
+      "Size" : "unlimited",
+      "Feature" : {
+         "model" : "SRHMM000025-2",
+         "from" : "P82599"
+      },
+      "Groups" : {
+         "2" : [
+            {
+               "hmmEnd" : 98,
+               "start" : 71,
+               "condition" : "M",
+               "label" : "METAL",
+               "end" : 71,
+               "desc" : "Iron (heme axial ligand).",
+               "hmmStart" : 98,
+               "group" : "2"
+            }
+         ],
+         "1" : [
+            {
+               "condition" : "H",
+               "label" : "METAL",
+               "hmmEnd" : 63,
+               "start" : 36,
+               "hmmStart" : 63,
+               "group" : "1",
+               "end" : 36,
+               "desc" : "Iron (heme axial ligand)."
+            }
+         ]
+      },
+      "TR" : "PIRSF; PIRSF000025; -; 1",
+      "Related" : "None",
+      "AC" : "PIRSR000025-2"
    }
 }

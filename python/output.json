@@ -1,0 +1,57 @@
+{
+    "Q52369": {
+        "PIRSR000005-1": {
+            "hmmFrom": 1, 
+            "seqAlign": "MNKVLVSLLLTLGITGMAHAAGDAEAGQGK---------VAVCGACHGVDGNSPAPNFPKLAGQGERYLLKQLQDIKAGStPGapegvGRKVLEMTGMLDPLSDQDLEDIAAYFSSQ-KGSVGYADPALAKQ-GEKLFRGGKLDQGMPACTGCHAPNGVGNDLAgFPKLGGQHAAYTAKQLTDFREGNRTNDGDTmIMRGVAAKLSNKDIEALSSYIQGLH", 
+            "hmmAlign": "mkrvallvlllaalallaaaagaaekgkalaaagtaakavkaCaaCHgadGnsaaaayPrLAgqpaeYlvkqlkdfksge.ek.....srknavmaglakeLsdadieelaaYfasqkapkakeaekkasaeegkklyegGdaergipaCaaCHgpsgaGvepa.fprLaGqraaYiaaqLkafrngrrennsva.lmrevakklteeeikalaaYlaslr", 
+            "seqFrom": 1, 
+            "RuleSites": [
+                {
+                    "end": 34, 
+                    "hmmEnd": 43, 
+                    "label": "BINDING", 
+                    "start": 34, 
+                    "group": "1", 
+                    "hmmStart": 43, 
+                    "condition": "C", 
+                    "desc": "Heme 1 (covalent)."
+                }, 
+                {
+                    "end": 37, 
+                    "hmmEnd": 46, 
+                    "label": "BINDING", 
+                    "start": 37, 
+                    "group": "1", 
+                    "hmmStart": 46, 
+                    "condition": "C", 
+                    "desc": "Heme 1 (covalent)."
+                }, 
+                {
+                    "end": 139, 
+                    "hmmEnd": 144, 
+                    "label": "BINDING", 
+                    "start": 139, 
+                    "group": "1", 
+                    "hmmStart": 144, 
+                    "condition": "C", 
+                    "desc": "Heme 2 (covalent)."
+                }, 
+                {
+                    "group": "1", 
+                    "hmmEnd": 147, 
+                    "label": "BINDING", 
+                    "start": 142, 
+                    "end": 142, 
+                    "hmmStart": 147, 
+                    "condition": "C", 
+                    "desc": "Heme 2 (covalent)."
+                }
+            ], 
+            "Scope": [
+                "Bacteria"
+            ], 
+            "seqTo": 210, 
+            "hmmTo": 213
+        }
+    }
+}
