@@ -1,28 +1,8 @@
+import argparse
 import csv
 import json
 import re
 
-
-
-def read_rules_input(file_name):
-    # print(file_name)
-    with open(file_name) as rulesfile:
-        rules_data = json.load(rulesfile)
-    # print(rules_data)
-
-
-    return rules_data
-
-# def read_tsv_input(file_name):
-#     print(file_name)
-#     with open(file_name) as tsvfile:
-#         reader = csv.reader(tsvfile, delimiter='\t')
-#         for row in reader:
-#             if not bool(row):
-#                 break
-#             query_id = row[0]
-#             print(query_id)
-#             process_row(row)
 
 
 def process_row(row, rule):
@@ -41,7 +21,7 @@ def process_row(row, rule):
 
     map = map_hmm_to_seq(hmm_from, hmm_align, seq_align)
 
-    print(sequence_id + "\t"+model_id)
+    # print(sequence_id + "\t"+model_id)
     rule_sites = []
 
     for grp in rule['Groups'].keys():
@@ -51,8 +31,8 @@ def process_row(row, rule):
 
         pass_count = 0
         
-        print(grp)
-        print(rule['Groups'][grp])
+        # print(grp)
+        # print(rule['Groups'][grp])
 
         for pos in rule['Groups'][grp]:
             condition = pos['condition']
@@ -64,7 +44,7 @@ def process_row(row, rule):
             condition = re.sub('\(', '{', condition)
             condition = re.sub('\)', '}', condition)
             condition = re.sub('x', '.', condition)
-            print('cond:' +condition)
+            # print('cond:' +condition)
 
 
 
@@ -77,14 +57,14 @@ def process_row(row, rule):
                       model_id+' on hit '+sequence_id)
                 target_seq = ''
 
-            print("Target: "+target_seq)
+            # print("Target: "+target_seq)
 
             if re.search('\A' + condition + '\Z', target_seq):
-                print("have a match!")
+                # print("have a match!")
                 pass_count += 1
         
         if len(rule['Groups'][grp]) == pass_count:
-            print("PASS!! " + str(pass_count))
+            # print("PASS!! " + str(pass_count))
             rule_sites.extend(rule['Groups'][grp])
 
     if rule_sites:
@@ -118,14 +98,23 @@ def map_hmm_to_seq(hmm_pos, hmm_seq, seq_seq):
 
 
 
-
 if __name__ == '__main__':
-    # manual testing example files
-    tsv_name = 'align_test.tsv'
-    rules_name = 'sr_uru.json'
+
+    ap = argparse.ArgumentParser()
+
+    ap.add_argument("-i", "--query", required=True, help="query tsv input file")
+    ap.add_argument("-r", "--rules", required=True, help="processed json rules file")
+    ap.add_argument("-o", "--out", required=True, help="output json results file")
+    args = vars(ap.parse_args())
+
+    tsv_name = args['query']
+    rules_name = args['rules']
+    out_file = args['out']
     result = {}
 
-    rules_hash = read_rules_input(rules_name)
+
+    with open(rules_name) as rulesfile:
+        rules_hash = json.load(rulesfile)
 
     # print(rules_hash)
 
@@ -141,10 +130,12 @@ if __name__ == '__main__':
             else:
                 print('ERROR: nonexistent rule ' + row[1] + ' in rules file')
             
-    print("Global result: ")
-    print(result)
+    # print("Global result: ")
+    # print(result)
 
-    with open('output.json', 'w') as out_file:
+    with open(out_file, 'w') as out_file:
         json.dump(result, out_file, indent=4,)
+
+    print ("Done.")
 
 
