@@ -17,6 +17,7 @@ use PIRSR;
 my $data_folder;
 
 my $preprocess = 0;
+my $skipNCter = 0;
 
 my $hmmscan = 'hmmscan';
 my $cpus = 1;
@@ -34,6 +35,7 @@ GetOptions(
   'verbose'     => \$verbose,
   'data=s'      => \$data_folder,
   'preprocess'  => \$preprocess,
+  'skipNCter'   => \$skipNCter,
   'hmmalign=s'  => \$hmmalign,
   'hmmscan=s'   => \$hmmscan,
   'cpus=i'      => \$cpus,
@@ -56,6 +58,7 @@ my $pirsr = PIRSR->new(
     hmmalign    => $hmmalign,
     hmmscan     => $hmmscan,
     cpus        => $cpus,
+    skipNCter   => $skipNCter,
     verbose     => $verbose
 );
 
@@ -129,14 +132,13 @@ pirsr.pl - PIRSR scan program
   -verbose                : Report warnings to STDOUT, default true.
   -data <folder>          : Folder with PIRSF data to use or preprocess, required.
   -preprocess             : If set will do the data processing and persist it, default assumes data has been preprocessed previously.
+  -skipNCter              : If set will ignore preprocessing of rules with a start/end position of Nter/Cter, default false.
   -query <file>           : FASTA file with sequences to analyse with PIRSR.
   -out <file>             : File name to write the JSON results from query data, default STDOUT.
   -hmmalign               : Path to hmmalign binaries, default system wide install.
   -hmmscan                : Path to hmmscan binaries, default system wide install.
   -cpus <#>               : Number of cpus to using for hmmscan, default 1.
-  -verbose                : Report warnings to STDOUT, default true.
-  -help                   : Prints brief help message.
-  -man                    : Prints full documentation.
+
 
 =head1 DESCRIPTION
 

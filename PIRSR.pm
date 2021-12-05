@@ -10,7 +10,7 @@ use namespace::autoclean;
 
 use Bio::Pfam::HMM::HMMResultsIO;
 use File::Temp qw/tempfile/;
-use File::Copy;
+# use File::Copy;
 
 
 use Smart::Comments;
@@ -36,6 +36,12 @@ has 'data_folder' => (
 # );
 
 has 'verbose' => (
+    is       => 'rw',
+    isa      => 'Bool',
+    default  => 0
+);
+
+has 'skipNCter' => (
     is       => 'rw',
     isa      => 'Bool',
     default  => 0
@@ -105,8 +111,6 @@ sub process_data {
     my ($self) = @_;
 
     my $data_folder = $self->{data_folder};
-#     $data_folder =~ s/\/$//;
-# ### $data_folder
 
     # check provided data folder exists
     if (! -d $data_folder) {
@@ -264,17 +268,12 @@ sub process_rules {
 
             $rule_hash = $self->align_template($rule_hash);
 
-            # my $rule_acc = $rule_hash->{'AC'};
+            if (!$rule_hash->{'ignore'}) {
+                $rules->{$rule_hash->{'AC'}} = $rule_hash;
+            } else {
+                warn "Rule $rule_hash->{AC} ignored\n" if ($self->verbose);
+            }
 
-            $rules->{$rule_hash->{'AC'}} = $rule_hash;
-
-
-            # open (my $uru_out, '>', "${rule_folder}/${rule_acc}.json" ) or die "Failed to open ${rule_acc}.json file: $!\n";
-
-            # my $json_uru = to_json( $rule_hash, { pretty => 1 } );
-            # print $uru_out $json_uru;
-
-            # close($uru_out) or die "Failed to close ${rule_acc}.json\n";
         }
         close($uru_in) or die "Failed to close ${rule_folder}/PIRSR.uru: $!\n";
     };
@@ -408,6 +407,10 @@ sub align_template {
             if ($rule->{'Groups'}->{$grp}->[$pos]->{'start'} eq 'Nter') {
                 warn "rule $rule->{AC}, group $grp, pos $pos: Start is Nter.\n" if ($self->verbose);
 
+                if ($self->{skipNCter}) {
+                    $rule->{'ignore'} = 1;
+                }
+
                 my $offset = get_ter_offset($rule->{'Groups'}->{$grp}->[$pos]->{condition});
 
                 $rule->{'Groups'}->{$grp}->[$pos]->{hmmStart} = $alignment->[$rule->{'Groups'}->{$grp}->[$pos]->{'end'}] - $offset;
@@ -419,6 +422,10 @@ sub align_template {
             # process end
             if ($rule->{'Groups'}->{$grp}->[$pos]->{'end'} eq 'Cter') {
                 warn "rule $rule->{AC}, group $grp, pos $pos: End is Cter.\n" if ($self->verbose);
+
+                if ($self->{skipNCter}) {
+                    $rule->{'ignore'} = 1;
+                }
 
                 my $offset = get_ter_offset($rule->{'Groups'}->{$grp}->[$pos]->{condition});
 
